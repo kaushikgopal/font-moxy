@@ -40,20 +40,6 @@ Version: "36"
 # CRSV: 0 (0 for Roman, 1 for Cursive)
 
 Fonts:
-  # Light:
-  #   MONO: 1
-  #   CASL: 0
-  #   wght: 275
-  #   slnt: 0
-  #   CRSV: 0
-
-  # Light Italic:
-  #   MONO: 1
-  #   CASL: 0
-  #   wght: 275
-  #   slnt: -15
-  #   CRSV: 0
-
   Regular:
     MONO: 1
     CASL: 0
@@ -68,14 +54,14 @@ Fonts:
     slnt: -15
     CRSV: 0
 
-  Medium:
+  Semibold:
     MONO: 1
     CASL: 0
     wght: 500
     slnt: 0
     CRSV: 0
 
-  Medium Italic:
+  Semibold Italic:
     MONO: 1
     CASL: 0
     wght: 500
@@ -96,19 +82,19 @@ Fonts:
     slnt: -15
     CRSV: 0
 
-  # Black:
-  #   MONO: 1
-  #   CASL: 0
-  #   wght: 900
-  #   slnt: 0
-  #   CRSV: 0
+  Black:
+    MONO: 1
+    CASL: 0
+    wght: 900
+    slnt: 0
+    CRSV: 0
 
-  # Black Italic:
-  #   MONO: 1
-  #   CASL: 0
-  #   wght: 900
-  #   slnt: -15
-  #   CRSV: 0
+  Black Italic:
+    MONO: 1
+    CASL: 0
+    wght: 900
+    slnt: -15
+    CRSV: 0
 
 # -----------------------------------------------------------------------------
 # Line Height
@@ -116,6 +102,13 @@ Fonts:
 # Multiplier for line height (1.0 = default, 1.2 = 20% more space between lines)
 # Adjusts the font's internal line gap metric
 Line Height Multiplier: 1.05
+
+# -----------------------------------------------------------------------------
+# Character Spacing
+
+# Multiplier for character spacing (1.0 = default, 1.05 = 5% wider)
+# Adjusts advance width of all glyphs uniformly
+Character Spacing: 1.0
 
 # -----------------------------------------------------------------------------
 # Font Features
@@ -133,12 +126,12 @@ Features:
   - ss03 # Simplified f
   # - ss04 # Simplified i
   # - ss05 # Simplified l
-  - ss06 # Simplified r
+  # - ss06 # Simplified r
   # - ss07 # Simplified italic diagonals
   - ss08 # No-serif L and Z
-  - ss09 # Simplified 6 & 9
+  # - ss09 # Simplified 6 & 9
   - ss10 # Dotted 0
   - ss11 # Simplified 1
-  - ss12 # Simplified @
-  - frac # fractions
+  # - ss12 # Simplified @
+  # - frac # fractions
 # That’s it! See README for next steps.
