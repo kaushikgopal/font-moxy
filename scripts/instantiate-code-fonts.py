@@ -221,6 +221,25 @@ def splitFont(
             print(f"\t\t New line height: {newLineHeight}")
             print(f"\t\t New line gap: {os2.sTypoLineGap}")
 
+        # Apply character spacing multiplier if specified
+        charSpacing = fontOptions.get('Character Spacing', 1.0)
+        if charSpacing != 1.0:
+            hmtx = monoFont["hmtx"]
+            glyphCount = 0
+
+            for glyphName in hmtx.metrics:
+                width, lsb = hmtx.metrics[glyphName]
+                newWidth = int(width * charSpacing)
+                hmtx.metrics[glyphName] = (newWidth, lsb)
+                glyphCount += 1
+
+            # Update xAvgCharWidth to match new spacing
+            monoFont["OS/2"].xAvgCharWidth = int(600 * charSpacing)
+
+            print(f"\n\t• Character spacing: {charSpacing}")
+            print(f"\t\t Adjusted {glyphCount} glyphs")
+            print(f"\t\t New xAvgCharWidth: {monoFont['OS/2'].xAvgCharWidth}")
+
         # Code to fix fsSelection adapted from:
         # https://github.com/googlefonts/gftools/blob/a0b516d71f9e7988dfa45af2d0822ec3b6972be4/Lib/gftools/fix.py#L764
 
