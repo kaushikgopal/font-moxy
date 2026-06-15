@@ -25,7 +25,7 @@
 
 Family Name: "KG"
 # font version is derived from the VF source file (e.g., Recursive_VF_1.085.ttf)
-Version: "38"
+Version: "39"
 
 # -----------------------------------------------------------------------------
 # Font Styles
@@ -42,7 +42,7 @@ Version: "38"
 Fonts:
   Regular:
     MONO: 1
-    CASL: 0
+    CASL: 0.5
     wght: 375
     slnt: 0
     CRSV: 0
@@ -56,7 +56,7 @@ Fonts:
 
   Semibold:
     MONO: 1
-    CASL: 0
+    CASL: 0.5
     wght: 500
     slnt: 0
     CRSV: 0
@@ -70,7 +70,7 @@ Fonts:
 
   Bold:
     MONO: 1
-    CASL: 0
+    CASL: 0.5
     wght: 700
     slnt: 0
     CRSV: 0
@@ -84,7 +84,7 @@ Fonts:
 
   Black:
     MONO: 1
-    CASL: 0
+    CASL: 0.5
     wght: 900
     slnt: 0
     CRSV: 0
@@ -109,6 +109,30 @@ Line Height Multiplier: 1.05
 # Multiplier for character spacing (1.0 = default, 1.05 = 5% wider)
 # Adjusts advance width of all glyphs uniformly
 Character Spacing: 1.0
+
+# -----------------------------------------------------------------------------
+# Borrowed Glyphs
+#
+# Graft glyph outlines from other open-source fonts into the build. Use this for
+# glyphs that don't exist anywhere inside Recursive (so they can't be frozen on
+# like the ssXX stylistic sets above). Outlines are weight-matched and
+# slant-matched to each instance automatically.
+#
+# NOTE: borrowed fonts must be OFL-compatible, and their copyright/license must
+# be retained when distributing. Lilex is OFL-1.1 (see font-data/Lilex-OFL.txt).
+#
+# Each entry: a source variable font + a mapping of {target glyph: source glyph}.
+#
+# max_stroke_mismatch (optional, default 0.12): if the borrowed glyph can't be
+# weight-matched to within this fraction of the native stroke (e.g. Lilex's parens
+# can't get heavy enough for Bold/Black), the swap is skipped for that instance and
+# Recursive's own glyph is kept. Raise it to force the swap on more weights.
+Borrowed Glyphs:
+  - source: font-data/Lilex[wght].ttf
+    max_stroke_mismatch: 0.12
+    glyphs:
+      parenleft: parenleft.cv13 # Lilex cv13: curvier parentheses
+      parenright: parenright.cv13
 
 # -----------------------------------------------------------------------------
 # Font Features

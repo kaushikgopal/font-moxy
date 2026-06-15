@@ -23,6 +23,7 @@ from dlig2calt import dlig2calt
 from mergePowerlineFont import mergePowerlineFont
 from ttfautohint.options import USER_OPTIONS as ttfautohint_options
 from fontfreeze_activation import freeze_features
+from borrow_glyphs import borrow_glyphs
 
 # if you provide a custom config path, this picks it up
 try:
@@ -182,6 +183,40 @@ def splitFont(
         # OpenType Table fixes
 
         monoFont =  ttLib.TTFont(outputPath)
+
+        # -------------------------------------------------------
+        # Borrow glyph outlines from other open-source fonts.
+        #
+        # Some glyphs simply don't exist anywhere in the Recursive variable font,
+        # so they can't be frozen on like the ssXX stylistic sets. The canonical
+        # example is Lilex's cv13 "curvier parentheses". We graft the actual
+        # outlines in here, weight-matched and slant-matched to this instance.
+        # (Borrowed fonts must be OFL-compatible and credited; see font-data/.)
+        borrowSpecs = fontOptions.get("Borrowed Glyphs") or []
+        for spec in borrowSpecs:
+            sourcePath = spec["source"]
+            glyphPairs = list(spec["glyphs"].items())  # (target, source) pairs
+            result = borrow_glyphs(
+                monoFont,
+                source_path=sourcePath,
+                glyph_map=glyphPairs,
+                slant=fontOptions["Fonts"][instance]["slnt"],
+                max_stroke_mismatch=spec.get("max_stroke_mismatch", 0.12),
+            )
+            srcName = os.path.basename(sourcePath)
+            if result["replaced"]:
+                print(
+                    f"\n\t• Borrowed {result['replaced']} from {srcName} "
+                    f"(target stroke {result['target_stroke']:.0f}, "
+                    f"matched source wght {result['matched_wght']} "
+                    f"@ stroke {result['source_stroke']:.0f})"
+                )
+            elif result["skipped"]:
+                print(
+                    f"\n\t• Kept native glyphs {result['skipped']} "
+                    f"(skipped {srcName}: best match {result['mismatch'] * 100:.0f}% "
+                    f"off target stroke, over threshold)"
+                )
 
         # drop STAT table to allow RIBBI style naming & linking on Windows
         try:
