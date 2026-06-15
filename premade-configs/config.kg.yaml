@@ -122,17 +122,39 @@ Character Spacing: 1.0
 # be retained when distributing. Lilex is OFL-1.1 (see font-data/Lilex-OFL.txt).
 #
 # Each entry: a source variable font + a mapping of {target glyph: source glyph}.
+# A source value may be a list of glyphs, which are laid out left-to-right and merged
+# into one outline (used to rebuild Recursive's backward-drawing ligature glyphs from
+# Lilex's .seq parts).
+#
+# probe (optional): {target, source, axis} – how to weight-match. axis "horizontal"
+# measures stroke at mid-height (vertical strokes like parens); "vertical" measures a
+# horizontal bar's thickness (dashes / arrow shafts).
 #
 # max_stroke_mismatch (optional, default 0.12): if the borrowed glyph can't be
 # weight-matched to within this fraction of the native stroke (e.g. Lilex's parens
 # can't get heavy enough for Bold/Black), the swap is skipped for that instance and
 # Recursive's own glyph is kept. Raise it to force the swap on more weights.
 Borrowed Glyphs:
+  # Lilex cv13 curvier parentheses
   - source: font-data/Lilex[wght].ttf
     max_stroke_mismatch: 0.12
+    probe: { target: parenleft, source: parenleft.cv13, axis: horizontal }
     glyphs:
       parenleft: parenleft.cv13 # Lilex cv13: curvier parentheses
       parenright: parenright.cv13
+
+  # Lilex arrows: the → / ← characters and the -> --> <- ligature shapes.
+  # Weight-matched against the hyphen (a clean horizontal bar).
+  - source: font-data/Lilex[wght].ttf
+    max_stroke_mismatch: 0.18
+    probe: { target: hyphen, source: hyphen, axis: vertical }
+    glyphs:
+      uni2192: arrowright # → character
+      uni2190: arrowleft # ← character
+      hyphen_greater.code: [hyphen_start.seq, greater_hyphen_end.seq] # ->
+      hyphen_hyphen_greater.code:
+        [hyphen_start.seq, hyphen_middle.seq, greater_hyphen_end.seq] # -->
+      less_hyphen.code: [less_hyphen_start.seq, hyphen_end.seq] # <-
 
 # -----------------------------------------------------------------------------
 # Font Features

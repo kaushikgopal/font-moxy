@@ -195,12 +195,12 @@ def splitFont(
         borrowSpecs = fontOptions.get("Borrowed Glyphs") or []
         for spec in borrowSpecs:
             sourcePath = spec["source"]
-            glyphPairs = list(spec["glyphs"].items())  # (target, source) pairs
             result = borrow_glyphs(
                 monoFont,
                 source_path=sourcePath,
-                glyph_map=glyphPairs,
+                glyph_map=spec["glyphs"],
                 slant=fontOptions["Fonts"][instance]["slnt"],
+                probe=spec.get("probe"),
                 max_stroke_mismatch=spec.get("max_stroke_mismatch", 0.12),
             )
             srcName = os.path.basename(sourcePath)
