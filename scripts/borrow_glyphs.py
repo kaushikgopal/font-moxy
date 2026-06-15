@@ -224,6 +224,7 @@ def borrow_glyphs(
     slant: float = 0.0,
     probe: Mapping[str, str] | None = None,
     max_stroke_mismatch: float | None = 0.12,
+    align: str | None = None,
 ) -> dict:
     """Replace glyphs in `target_font` with outlines borrowed from `source_path`.
 
@@ -336,17 +337,25 @@ def borrow_glyphs(
 
         if src_bounds is not None:
             s_x0, s_y0, s_x1, s_y1 = src_bounds
-            s_cy = (s_y0 + s_y1) / 2.0
-            tgt_cy = (tgt_glyph.yMin + tgt_glyph.yMax) / 2.0
-            dy = tgt_cy - s_cy
-            if composed:
-                # Align the merged outline's left ink edge to the original glyph's,
-                # reproducing how Recursive's arrow covers its preceding cell(s).
-                dx = tgt_glyph.xMin - s_x0
+            # Alignment mode: "preserve" keeps the source's own coordinates (for
+            # backward-drawing single glyphs like |> that already use the same
+            # multi-cell convention); "leftedge" (default for composed) matches the
+            # original glyph's left ink edge; "center" (default for single) centres.
+            mode = align or ("leftedge" if composed else "center")
+            if mode == "preserve":
+                dx = dy = 0.0
             else:
-                s_cx = (s_x0 + s_x1) / 2.0
-                tgt_cx = (tgt_glyph.xMin + tgt_glyph.xMax) / 2.0
-                dx = tgt_cx - s_cx
+                s_cy = (s_y0 + s_y1) / 2.0
+                tgt_cy = (tgt_glyph.yMin + tgt_glyph.yMax) / 2.0
+                dy = tgt_cy - s_cy
+                if mode == "leftedge":
+                    # Align the merged outline's left ink edge to the original glyph's,
+                    # reproducing how Recursive's arrow covers its preceding cell(s).
+                    dx = tgt_glyph.xMin - s_x0
+                else:  # center
+                    s_cx = (s_x0 + s_x1) / 2.0
+                    tgt_cx = (tgt_glyph.xMin + tgt_glyph.xMax) / 2.0
+                    dx = tgt_cx - s_cx
         else:
             dx = dy = 0.0
 

@@ -156,6 +156,16 @@ Borrowed Glyphs:
         [hyphen_start.seq, hyphen_middle.seq, greater_hyphen_end.seq] # -->
       less_hyphen.code: [less_hyphen_start.seq, hyphen_end.seq] # <-
 
+  # Lilex cv11 "connected bar": |> and <| join the bar to the arrowhead.
+  # These are backward-drawing single glyphs, so keep the source's own position.
+  - source: font-data/Lilex[wght].ttf
+    max_stroke_mismatch: 0.18
+    align: preserve
+    probe: { target: bar, source: bar, axis: horizontal }
+    glyphs:
+      bar_greater.code: bar_greater.liga.cv11 # |>
+      less_bar.code: less_bar.liga.cv11 # <|
+
 # -----------------------------------------------------------------------------
 # Join Dashes
 #

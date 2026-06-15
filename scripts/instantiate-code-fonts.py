@@ -204,6 +204,7 @@ def splitFont(
                 slant=fontOptions["Fonts"][instance]["slnt"],
                 probe=spec.get("probe"),
                 max_stroke_mismatch=spec.get("max_stroke_mismatch", 0.12),
+                align=spec.get("align"),
             )
             srcName = os.path.basename(sourcePath)
             if result["replaced"]:
