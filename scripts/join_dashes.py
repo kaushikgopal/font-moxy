@@ -114,7 +114,7 @@ def _append_dash_calt(font, min_run=4):
     i_mid = len(LL); LL.append(_single_sub_lookup({"hyphen": "hyphen_middle.seq"}))
     i_end = len(LL); LL.append(_single_sub_lookup({"hyphen": "hyphen_end.seq"}))
 
-    glyph_map = font.getReverseGlyphMap()
+    glyph_map = font.getReverseGlyphMap(rebuild=True)
     seq_back = ["hyphen_start.seq", "hyphen_middle.seq"]
     # START needs (min_run - 1) hyphens of lookahead, so only long runs trigger and
     # the two hyphens in "-->" are never mistaken for the start of a run.
