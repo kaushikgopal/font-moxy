@@ -44,6 +44,7 @@ from fontTools.otlLib import builder as otl
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.boundsPen import BoundsPen
+from fontTools.pens.recordingPen import DecomposingRecordingPen
 
 from borrow_glyphs import _measure_stroke, _match_source_weight, CELL
 
@@ -51,18 +52,23 @@ SEQ_GLYPHS = ("hyphen_start.seq", "hyphen_middle.seq", "hyphen_end.seq")
 
 
 def _sheared(source_glyf, source_gs, parts, shear, dx0=0.0, dy0=0.0):
-    """Merge `parts` (laid out across cells) under shear; return a TTGlyph + bounds."""
+    """Merge `parts` (laid out across cells) under shear; return a TTGlyph + bounds.
+
+    Composite source glyphs are decomposed to contours, so the result never
+    references component glyphs that may not exist in the target font.
+    """
     n = len(parts)
     affines = []
     for i in range(n):
         dx = (i - (n - 1)) * CELL + dx0
         affines.append((1.0, 0.0, shear, 1.0, dx, dy0))
     bounds_pen = BoundsPen(source_gs)
-    for part, aff in zip(parts, affines):
-        source_glyf[part].draw(TransformPen(bounds_pen, aff), source_gs)
     pen = TTGlyphPen(source_gs)
     for part, aff in zip(parts, affines):
-        source_glyf[part].draw(TransformPen(pen, aff), source_gs)
+        recorder = DecomposingRecordingPen(source_gs)
+        source_glyf[part].draw(recorder, source_gs)
+        recorder.replay(TransformPen(bounds_pen, aff))
+        recorder.replay(TransformPen(pen, aff))
     glyph = pen.glyph()
     return glyph, bounds_pen.bounds
 

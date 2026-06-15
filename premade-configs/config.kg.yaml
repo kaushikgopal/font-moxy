@@ -151,6 +151,14 @@ Borrowed Glyphs:
     glyphs:
       uni2192: arrowright # → character
       uni2190: arrowleft # ← character
+      arrowup: arrowup # ↑
+      arrowdown: arrowdown # ↓
+      uni2194: arrowboth # ↔
+      uni2195: arrowupdn # ↕
+      uni2196: uni2196 # ↖
+      uni2197: uni2197 # ↗
+      uni2198: uni2198 # ↘
+      uni2199: uni2199 # ↙
       hyphen_greater.code: [hyphen_start.seq, greater_hyphen_end.seq] # ->
       hyphen_hyphen_greater.code:
         [hyphen_start.seq, hyphen_middle.seq, greater_hyphen_end.seq] # -->
@@ -176,6 +184,20 @@ Borrowed Glyphs:
 Join Dashes:
   source: font-data/Lilex[wght].ttf
   max_stroke_mismatch: 0.18
+
+# -----------------------------------------------------------------------------
+# Add Characters
+#
+# Import brand-new single-character glyphs that Recursive lacks entirely, with
+# cmap entries, from Lilex. These are Lilex's fancier single-character arrows
+# (hooked, looping, circular, double). The plain directional arrows that already
+# exist in Recursive (↑↓←→↔↕ and diagonals) are handled as swaps in Borrowed
+# Glyphs above. Names are Lilex's uniXXXX glyph names.
+Add Characters:
+  source: font-data/Lilex[wght].ttf
+  glyphs:
+    [uni21A9, uni21AA, uni21B0, uni21B1, uni21B2, uni21B3, uni21B6, uni21B7,
+     uni21BA, uni21BB, uni21C4, uni21C6]
 
 # -----------------------------------------------------------------------------
 # Font Features

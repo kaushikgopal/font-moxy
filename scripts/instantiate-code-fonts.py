@@ -26,6 +26,7 @@ from fontfreeze_activation import freeze_features
 from borrow_glyphs import borrow_glyphs
 from join_dashes import join_dashes
 from extend_arrows import extend_arrows
+from add_characters import add_characters
 
 # if you provide a custom config path, this picks it up
 try:
@@ -250,6 +251,23 @@ def splitFont(
                 )
             else:
                 print(f"\n\t• Kept native dashes ({jres['reason']})")
+
+        # -------------------------------------------------------
+        # Add brand-new characters Recursive lacks (e.g. Lilex's fancy
+        # single-character arrows), with cmap entries.
+        addCfg = fontOptions.get("Add Characters")
+        if addCfg:
+            ares = add_characters(
+                monoFont,
+                source_path=addCfg["source"],
+                glyph_names=addCfg["glyphs"],
+                slant=fontOptions["Fonts"][instance]["slnt"],
+            )
+            print(
+                f"\n\t• Added {len(ares['added'])} characters from "
+                f"{os.path.basename(addCfg['source'])} "
+                f"(matched source wght {ares['matched_wght']})"
+            )
 
         # drop STAT table to allow RIBBI style naming & linking on Windows
         try:
