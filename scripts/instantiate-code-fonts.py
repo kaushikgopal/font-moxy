@@ -24,6 +24,7 @@ from mergePowerlineFont import mergePowerlineFont
 from ttfautohint.options import USER_OPTIONS as ttfautohint_options
 from fontfreeze_activation import freeze_features
 from borrow_glyphs import borrow_glyphs
+from join_dashes import join_dashes
 
 # if you provide a custom config path, this picks it up
 try:
@@ -217,6 +218,25 @@ def splitFont(
                     f"(skipped {srcName}: best match {result['mismatch'] * 100:.0f}% "
                     f"off target stroke, over threshold)"
                 )
+
+        # -------------------------------------------------------
+        # Join hyphen runs into a continuous line, Lilex-style (--- and longer).
+        joinCfg = fontOptions.get("Join Dashes")
+        if joinCfg:
+            jres = join_dashes(
+                monoFont,
+                source_path=joinCfg["source"],
+                slant=fontOptions["Fonts"][instance]["slnt"],
+                max_stroke_mismatch=joinCfg.get("max_stroke_mismatch", 0.18),
+            )
+            if jres["done"]:
+                print(
+                    f"\n\t• Joined hyphen runs (---, ----, …) from "
+                    f"{os.path.basename(joinCfg['source'])} "
+                    f"(matched source wght {jres['matched_wght']})"
+                )
+            else:
+                print(f"\n\t• Kept native dashes ({jres['reason']})")
 
         # drop STAT table to allow RIBBI style naming & linking on Windows
         try:

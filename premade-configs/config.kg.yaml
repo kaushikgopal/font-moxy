@@ -157,6 +157,17 @@ Borrowed Glyphs:
       less_hyphen.code: [less_hyphen_start.seq, hyphen_end.seq] # <-
 
 # -----------------------------------------------------------------------------
+# Join Dashes
+#
+# Connect runs of hyphens into one continuous line, Lilex-style. "--" is left as
+# Recursive draws it (two dashes, like Lilex); "---" and longer are joined. Uses
+# the same weight-match + fallback as Borrowed Glyphs (heavy weights that Lilex
+# can't match keep Recursive's native dashes).
+Join Dashes:
+  source: font-data/Lilex[wght].ttf
+  max_stroke_mismatch: 0.18
+
+# -----------------------------------------------------------------------------
 # Font Features
 
 # Freeze in code ligatures? True or False
