@@ -47,6 +47,7 @@ from vf_lilex import (  # noqa: E402
     append_lookup,
     feature_lookup_indices,
     graft_variable_alternate,
+    repair_hvar,
     single_sub_lookup,
     source_bounds,
     wght_anchors,
@@ -450,22 +451,14 @@ def add_arrow_chars(font: TTFont, recursive_path: str) -> list[int]:
 def build(src_path: str, out_path: str) -> None:
     print(f"Loading {src_path}")
     font = TTFont(src_path)
-    # Force-decompile glyf/gvar now, before we add any glyphs — both store a
-    # glyphCount that is asserted against the (still-original) glyph order.
+    # Force-decompile glyf/gvar/HVAR now, before we add any glyphs. glyf/gvar store
+    # a glyphCount asserted against the (still-original) glyph order; HVAR's
+    # AdvWidthMap decompiles lazily and, if first touched AFTER we add glyphs, would
+    # auto-fill the new glyphs with the repeat-last varidx — so decompile its map
+    # now (1304 entries) and let repair_hvar add the new glyphs explicitly later.
     _ = font["glyf"]
     _ = font["gvar"]
-
-    # Drop HVAR. Recursive ships BOTH HVAR and gvar; HarfBuzz then reads advances
-    # from HVAR. New alternate glyphs are absent from HVAR's AdvWidthMap, and the
-    # spec maps out-of-range glyph IDs to the LAST entry — which carries a +700
-    # wght advance delta, so our 600-unit alternates wrongly grow to 800 at heavier
-    # weights. Without HVAR, advances come from gvar phantom points: existing
-    # glyphs keep their (already-encoded) advance variation and our alternates,
-    # whose phantom deltas are zero, stay a fixed 600/1200/1800 at every location.
-    if "HVAR" in font:
-        del font["HVAR"]
-        print("Dropped HVAR (advances now from gvar phantom points; fixes "
-              "new-glyph advance at heavy weights)")
+    _ = font["HVAR"].table.AdvWidthMap.mapping
 
     print("Renaming family -> 'Rec Mono Casual KG' (all 5 axes kept)")
     rename_family(font)
@@ -490,6 +483,13 @@ def build(src_path: str, out_path: str) -> None:
     from vf_long_arrows import long_arrows
     la = long_arrows(font, src_path)
     print(f"  • long arrows -> dlig lookups {la}")
+
+    # ---- keep HVAR but make the new glyphs advance-correct -------------------
+    # Recursive ships HVAR; HarfBuzz reads advances from it, and glyphs beyond its
+    # map repeat the last entry's +700 wght delta (our alternates would balloon to
+    # 800 at heavy weights). Point every new glyph at a zero-delta entry instead.
+    n = repair_hvar(font)
+    print(f"Repaired HVAR: {n} new glyphs pinned to zero advance variation")
 
     # rebuild glyph-name cache before any compile/cmap touches new glyphs
     font.getReverseGlyphMap(rebuild=True)

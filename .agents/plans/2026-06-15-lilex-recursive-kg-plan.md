@@ -273,11 +273,23 @@ dropped; keep (3,1,0x409).
   HVAR's AdvWidthMap, and the spec maps out-of-range glyph IDs to the LAST entry
   — which carries a +700 wght advance delta — so our 600-unit alternates wrongly
   grew to 800 at heavier weights (seq pieces visibly broke apart). (fontTools'
-  instancer hid this: it maps HVAR by glyph NAME and returned 600.) FIX: delete
-  HVAR in the VF; advances then come from gvar phantom points. Existing glyphs
-  keep their (already-encoded) advance variation; our alternates have zero phantom
-  deltas so they stay a fixed 600/1200/1800 at every axis location. VERIFIED in
-  HarfBuzz across wght and OG advance parity preserved.
+  instancer hid this: it maps HVAR by glyph NAME and returned 600.) FIRST FIX was
+  to delete HVAR (advances then from gvar phantom points). FINAL FIX (vf_lilex
+  repair_hvar): KEEP HVAR and point every new glyph at a zero-delta variation
+  index (the one .notdef uses, found dynamically) → fixed 600/1200/1800 at every
+  location. Gotcha: HVAR's AdvWidthMap decompiles LAZILY and, if first touched
+  after glyphs are added, auto-fills new glyphs with the repeat-last varidx — so
+  force-decompile `font["HVAR"].table.AdvWidthMap.mapping` at build start (like
+  glyf/gvar) before adding glyphs. VERIFIED in HarfBuzz: new glyphs → varidx 0,
+  advances 600 at wght 300/500/1000; existing-glyph advances still identical to OG.
+- 2026-06-15 - executor/human: VF default instance is MONO=0 (Sans Linear Light,
+  PROPORTIONAL) per "default == pristine OG Recursive". Terminals render a VF's
+  default instance, so without pinning axes the bare font is proportional Sans →
+  Ghostty grids it badly (wide uniform spacing). Fix for users: Ghostty
+  `font-variation = MONO=1` (+ CASL=0.5, wght=…). Open option: rebase the fvar
+  default to MONO=1/CASL=0.5 so it's mono-by-default (would drop the literal
+  pristine-OG default; awaiting human). Also: thin backslash lives under `lilx`
+  in the VF (NOT ss03); ss03 is Recursive's own Simplified-f (also in ss13).
 - 2026-06-15 - executor: Recursive VF has NO `calt`; code ligatures live in `dlig`
   (e.g. L180 bar+greater→bar_greater.code) + one `liga` lookup. dlig ligates only
   `--`,`---` and the bounded arrows; runs of 4+ hyphens stay loose. So lilx's

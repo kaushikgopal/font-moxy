@@ -21,10 +21,11 @@ interpolates cleanly everywhere. The recipe (proven by the spike):
     glyph for italics (shear = tan 15°, applied to the light geometry).
 
 MONO/CASL/CRSV are left un-varied on the borrowed glyphs (a single curvy paren
-shape across MONO/CASL is fine); their *advance* is fixed at the 600-unit cell —
-new glyphs are absent from HVAR's AdvWidthMap, so they take the static hmtx
-advance (600) at every axis location, which is exactly the monospace behaviour we
-want. The pristine originals are never touched.
+shape across MONO/CASL is fine); their *advance* is fixed at the 600-unit cell.
+New glyphs would otherwise misbehave under HVAR (see ``repair_hvar`` below), so
+each is pinned to a zero-delta advance entry — fixed 600/1200/1800 at every axis
+location, exactly the monospace behaviour we want. The pristine originals are
+never touched.
 
 All GSUB edits are hand-built (otlLib/otTables), append-only. feaLib's
 addOpenTypeFeatures rewrites ``calt`` and silently disables Recursive's existing
@@ -297,6 +298,51 @@ def add_variable_glyph(
         ] + [(0, 0)] * 4
         variations.append(TupleVariation({"slnt": (-1.0, -1.0, 0.0)}, slnt_deltas))
     font["gvar"].variations[name] = variations
+
+
+# ----------------------------------------------------------------------------
+# HVAR repair (keep the table; make new glyphs advance-correct).
+
+
+def repair_hvar(font: TTFont) -> int:
+    """Point every glyph missing from HVAR's AdvWidthMap at a zero-delta entry.
+
+    Recursive ships HVAR (advance-width variations) alongside gvar; HarfBuzz reads
+    advances from HVAR. Its AdvWidthMap only covers the ORIGINAL glyphs, and per the
+    DeltaSetIndexMap spec, glyph IDs beyond the map repeat the LAST entry — which
+    carries a +700 wght delta — so our fixed-advance alternates wrongly grow to 800
+    at heavy weights. (fontTools' instancer hides this; it maps HVAR by glyph name.)
+
+    Rather than drop HVAR, we map every new glyph at a zero-delta variation index,
+    so its advance stays the static hmtx value (600/1200/1800) at every axis
+    location. Recursive already has such an entry (the one .notdef uses); we find it
+    dynamically. Returns the number of glyphs newly mapped.
+    """
+    if "HVAR" not in font:
+        return 0
+    hvar = font["HVAR"].table
+    awm = hvar.AdvWidthMap
+    if awm is None or not hasattr(awm, "mapping"):
+        return 0
+
+    zero_idx = None
+    for outer, ivd in enumerate(hvar.VarStore.VarData):
+        for inner, row in enumerate(ivd.Item):
+            if all(d == 0 for d in row):
+                zero_idx = (outer << 16) | inner
+                break
+        if zero_idx is not None:
+            break
+    if zero_idx is None:
+        raise RuntimeError("no zero-delta HVAR variation index to map new glyphs to")
+
+    mapping = awm.mapping
+    added = 0
+    for g in font.getGlyphOrder():
+        if g not in mapping:
+            mapping[g] = zero_idx
+            added += 1
+    return added
 
 
 # ----------------------------------------------------------------------------
