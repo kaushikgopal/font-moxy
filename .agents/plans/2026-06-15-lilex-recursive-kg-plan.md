@@ -287,8 +287,10 @@ dropped; keep (3,1,0x409).
 - [ ] DECIDE + maybe implement: thin the escape LIGATURES \n \t \b \v (\r)
       (backslash_X.code) — option (a) leave / (b) decompose to thin-\ + letter /
       (c) thin ligature variants. Awaiting human.
-- [ ] FINAL: install (`make build` or copy fonts/RecursiveKG/*.ttf to ~/Library/Fonts);
-      then `venv/bin/python -m pip uninstall -y Pillow uharfbuzz`.
+- [x] FINAL: install (`make build` or copy fonts/RecursiveKG/*.ttf to ~/Library/Fonts);
+      then `venv/bin/python -m pip uninstall -y Pillow uharfbuzz`. — DONE 2026-06-15:
+      8 instances built + installed via `make build`; Pillow/uharfbuzz removed
+      (were dev-only, never in requirements.txt). Static build COMPLETE.
 
 ### Task B (variable font) — only after static build done + user go
 - [ ] Spike: graft ONE variable Lilex glyph (paren) into a partial-instanced
