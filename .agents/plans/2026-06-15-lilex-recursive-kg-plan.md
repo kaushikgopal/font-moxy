@@ -255,24 +255,36 @@ dropped; keep (3,1,0x409).
   added arrow chars go UNDER `lilx` (gated), not default.
 - 2026-06-15 - executor: VF build started. New separate source
   `scripts/build-variable-font.py` + helper `scripts/vf_lilex.py` (static build
-  untouched). Output `fonts/RecMonoCasualKG-VF/…` (gitignored). Decisions proven
-  by inspection before coding:
-  * Recursive VF carries BOTH HVAR and gvar. NEW alternate glyphs are absent from
-    HVAR's AdvWidthMap, so they take their static hmtx advance (600) at EVERY axis
-    location — exactly the monospace behaviour we want. So: keep HVAR untouched,
-    give alternates advance 600 + zero phantom-point gvar deltas (no advance var).
-    (At MONO<1 with lilx on, alternates are 600 vs the proportional base — fine;
-    lilx is a mono-code bundle and the default with lilx OFF is pristine.)
+  untouched). Output `fonts/RecMonoCasualKG-VF/…` (gitignored). Decisions:
   * Default VF axes stay at OG (MONO0/CASL0/wght300/slnt0/CRSV0.5); nothing baked.
-    VERIFIED default-instance outlines identical to OG Recursive (0/1304 diffs).
+    VERIFIED default-instance outlines identical to OG Recursive (0/1304 diffs)
+    and existing-glyph advances identical to OG across axes (HarfBuzz).
   * Family renamed via name IDs 1/2/3/4/6/16/17 (macOS 3,1,0x409 only). Default
     style labelled "Regular" for RIBBI sanity (axes unchanged).
   * ss13 "Kaush's preferences" = a FeatureRecord (FeatureParamsStylisticSet UI
     name) referencing Recursive's EXISTING lookups [82,85,87,89,90] for
     ss03/06/08/10/11; wired into every langsys. VERIFIED one toggle == enabling
-    all five. Lilex weight anchors for variable glyphs: light=Lilex@~300 (matches
-    Recursive default stroke exactly), heavy caps at Lilex@700 (lighter than
-    Recursive black — accepted, can't per-weight fall back in a single VF glyph).
+    all five.
+  * Lilex weight anchors for variable glyphs: light=Lilex@~300 (matches Recursive
+    default stroke exactly), heavy caps at Lilex@700 (lighter than Recursive black
+    — accepted, can't per-weight fall back in a single VF glyph).
+- 2026-06-15 - executor: HVAR GOTCHA (important). Recursive ships BOTH HVAR and
+  gvar; HarfBuzz reads advances from HVAR. NEW alternate glyphs are absent from
+  HVAR's AdvWidthMap, and the spec maps out-of-range glyph IDs to the LAST entry
+  — which carries a +700 wght advance delta — so our 600-unit alternates wrongly
+  grew to 800 at heavier weights (seq pieces visibly broke apart). (fontTools'
+  instancer hid this: it maps HVAR by glyph NAME and returned 600.) FIX: delete
+  HVAR in the VF; advances then come from gvar phantom points. Existing glyphs
+  keep their (already-encoded) advance variation; our alternates have zero phantom
+  deltas so they stay a fixed 600/1200/1800 at every axis location. VERIFIED in
+  HarfBuzz across wght and OG advance parity preserved.
+- 2026-06-15 - executor: Recursive VF has NO `calt`; code ligatures live in `dlig`
+  (e.g. L180 bar+greater→bar_greater.code) + one `liga` lookup. dlig ligates only
+  `--`,`---` and the bounded arrows; runs of 4+ hyphens stay loose. So lilx's
+  connected `---`/bars substitute the dlig-formed `.code` glyph (assumes dlig on —
+  the toggle any Recursive ligature needs) and the ≥4-hyphen chain re-cuts loose
+  runs into Lilex seq pieces (min_run=4, same as the static build). The DEFAULT
+  long-arrow fix therefore can't be a `calt` addition — it must extend `dlig`.
 
 ## Execution Protocol
 

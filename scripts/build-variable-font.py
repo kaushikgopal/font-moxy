@@ -37,6 +37,7 @@ import os
 import sys
 
 from fontTools.ttLib import TTFont
+from fontTools.ttLib.tables import otTables as ot
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -190,6 +191,104 @@ def add_connected_bars(font: TTFont, recursive_path: str) -> list[int]:
 
 
 # ----------------------------------------------------------------------------
+# lilx tweak: connected dashes (--- and longer), Lilex-style.
+
+
+def add_connected_dashes(font: TTFont, recursive_path: str) -> list[int]:
+    """Connect hyphen runs Lilex-style (--- and longer), as opt-in variable glyphs.
+
+    Recursive's dlig ligates only ``--`` and ``---`` (runs of 4+ stay as loose
+    ``hyphen`` glyphs). So, like the static build, lilx:
+      * substitutes the dlig-formed hyphen_hyphen_hyphen.code -> a connected 3-cell
+        bar (.lilx) for ``---``;
+      * runs a chain that re-cuts loose runs of >= 4 hyphens into Lilex's
+        start/middle/end .seq pieces.
+    ``--`` is left as Recursive draws it (two dashes, like Lilex). Variable seq
+    pieces + connected bar thicken with wght and shear with slnt.
+    """
+    from join_dashes import _chain3
+
+    light, heavy = wght_anchors(
+        recursive_path,
+        target_glyph="hyphen",
+        source_path=LILEX_VF,
+        probe_source="hyphen",
+        axis="vertical",
+    )
+
+    # Vertical align: shift Lilex seq pieces onto Recursive's hyphen centre so
+    # the joined run sits at the dash height (≈ -6 units).
+    rec = TTFont(recursive_path)
+    rg = rec["glyf"]
+    h = rg["hyphen"]; h.recalcBounds(rg)
+    rec_dash_cy = (h.yMin + h.yMax) / 2.0
+    seq = ["hyphen_start.seq", "hyphen_middle.seq", "hyphen_end.seq"]
+    mid_b = source_bounds(LILEX_VF, light, ["hyphen_middle.seq"])
+    dy = rec_dash_cy - (mid_b[1] + mid_b[3]) / 2.0
+
+    for name in seq:
+        graft_variable_alternate(
+            font,
+            source_path=LILEX_VF,
+            alt_name=name,
+            source_glyphs=[name],
+            light_wght=light,
+            heavy_wght=heavy,
+            dy=dy,
+        )
+
+    # Connected "---": tile the three seq pieces onto Recursive's 1800-unit
+    # hyphen_hyphen_hyphen.code ink cell.
+    tri = rg["hyphen_hyphen_hyphen.code"]; tri.recalcBounds(rg)
+    tiled = source_bounds(LILEX_VF, light, seq)
+    dx3 = tri.xMin - tiled[0]
+    code_lilx = "hyphen_hyphen_hyphen.code.lilx"
+    graft_variable_alternate(
+        font,
+        source_path=LILEX_VF,
+        alt_name=code_lilx,
+        source_glyphs=seq,
+        light_wght=light,
+        heavy_wght=heavy,
+        advance=rec["hmtx"].metrics["hyphen_hyphen_hyphen.code"][0],
+        dx=dx3,
+        dy=dy,
+    )
+
+    glyph_map = font.getReverseGlyphMap(rebuild=True)
+
+    # lilx lookups: the --- single-sub, three seq single-subs, and a chain.
+    lookups: list[int] = []
+    i_tri = append_lookup(
+        font, single_sub_lookup({"hyphen_hyphen_hyphen.code": code_lilx})
+    )
+    lookups.append(i_tri)
+
+    i_start = append_lookup(font, single_sub_lookup({"hyphen": "hyphen_start.seq"}))
+    i_mid = append_lookup(font, single_sub_lookup({"hyphen": "hyphen_middle.seq"}))
+    i_end = append_lookup(font, single_sub_lookup({"hyphen": "hyphen_end.seq"}))
+
+    seq_back = ["hyphen_start.seq", "hyphen_middle.seq"]
+    min_run = 4
+    start_lookahead = [["hyphen"]] * (min_run - 1)
+    chain = ot.Lookup()
+    chain.LookupType = 6
+    chain.LookupFlag = 0
+    chain.SubTable = [
+        _chain3([seq_back], [["hyphen"]], [["hyphen"]], i_mid, glyph_map),  # middle
+        _chain3([seq_back], [["hyphen"]], [], i_end, glyph_map),            # end
+        _chain3([], [["hyphen"]], start_lookahead, i_start, glyph_map),     # start
+    ]
+    chain.SubTableCount = len(chain.SubTable)
+    i_chain = append_lookup(font, chain)
+    lookups.append(i_chain)
+
+    print(f"  • connected dashes: Lilex wght {light}->{heavy}, "
+          f"lookups {lookups} (+inner {[i_start, i_mid, i_end]})")
+    return lookups
+
+
+# ----------------------------------------------------------------------------
 
 
 def build(src_path: str, out_path: str) -> None:
@@ -199,6 +298,18 @@ def build(src_path: str, out_path: str) -> None:
     # glyphCount that is asserted against the (still-original) glyph order.
     _ = font["glyf"]
     _ = font["gvar"]
+
+    # Drop HVAR. Recursive ships BOTH HVAR and gvar; HarfBuzz then reads advances
+    # from HVAR. New alternate glyphs are absent from HVAR's AdvWidthMap, and the
+    # spec maps out-of-range glyph IDs to the LAST entry — which carries a +700
+    # wght advance delta, so our 600-unit alternates wrongly grow to 800 at heavier
+    # weights. Without HVAR, advances come from gvar phantom points: existing
+    # glyphs keep their (already-encoded) advance variation and our alternates,
+    # whose phantom deltas are zero, stay a fixed 600/1200/1800 at every location.
+    if "HVAR" in font:
+        del font["HVAR"]
+        print("Dropped HVAR (advances now from gvar phantom points; fixes "
+              "new-glyph advance at heavy weights)")
 
     print("Renaming family -> 'Rec Mono Casual KG' (all 5 axes kept)")
     rename_family(font)
@@ -211,6 +322,7 @@ def build(src_path: str, out_path: str) -> None:
     lilx_lookups: list[int] = []
     lilx_lookups += add_curvy_parens(font, src_path)
     lilx_lookups += add_connected_bars(font, src_path)
+    lilx_lookups += add_connected_dashes(font, src_path)
 
     add_feature(font, feature_tag="lilx", lookup_indices=lilx_lookups)
     print(f"  • lilx -> lookups {lilx_lookups}")
