@@ -240,6 +240,13 @@ dropped; keep (3,1,0x409).
   a free named ssNN "Kaush's preferences" = Recursive's own ss03/06/08/10/11.
   Both off by default. Impact: long arrows + thin backslash go under `lilx`;
   thin backslash leaves tag ss03; pick a free ssNN (ss20 occupied).
+- 2026-06-15 - human: REFINED — (1) long arrows are a DEFAULT calt ligature fix,
+  NOT under `lilx`; so VF long arrows must be built from RECURSIVE's own arrow
+  geometry (native height), independent of the Lilex connected-dash shaft.
+  (2) thin backslash -> `lilx` (confirmed). (3) "Kaush's preferences" tag: ss85
+  is NOT a registered stylistic set (only ss01-20); use a free registered slot —
+  planner picks `ss13` (named/discoverable) unless human objects. (4) the 12
+  added arrow chars go UNDER `lilx` (gated), not default.
 
 ## Execution Protocol
 
@@ -321,8 +328,11 @@ dropped; keep (3,1,0x409).
 
 ## Open Questions
 
-- Task B: exact axis set to expose names/defaults; opt-in feature tags per tweak;
-  whether to also vary the borrowed glyphs or freeze them at a reference weight
-  (spike will inform).
+- Task B: VF bundles FINALIZED — default OG Recursive; `lilx` (custom tag) =
+  curvy parens + connected dashes + connected bars + thin backslash + 12 added
+  arrows; long arrows = DEFAULT calt fix from Recursive's own geometry (not
+  lilx); "Kaush's preferences" = `ss13` (named) bundling Recursive ss03/06/08/10/11.
+- Task B spike result will decide: vary the borrowed glyphs across all 5 axes or
+  only wght (+ slnt shear), freezing the rest at a reference.
 - Escape-char set final membership (does the user want regex classes / quotes
   thinned?). Start with the default set; refine on review.
