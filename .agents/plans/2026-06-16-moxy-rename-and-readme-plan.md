@@ -372,6 +372,12 @@ End state: a single lean, user-facing **`README.md`** plus a **`CUSTOMIZING.md`*
   release run). Brewfiles → `font-moxy`. Name diligence: no coding font named
   "Moxy" (only "Moxy Rush" display + Marriott hotels; low risk, confirm before
   public release). Upstream generic premade-configs left as-is.
+- 2026-06-16 - executor: **Phase C (docs) done.** Rewrote `README.md` Moxy-first
+  (Moxy ASCII banner, install via `font-moxy` cask + migration note for old
+  `font-recursive-kg` users, a "what's different from Recursive" table, the VF
+  revert toggles, attribution to Recursive + Lilex both OFL-1.1, MIT tooling).
+  New `CUSTOMIZING.md` absorbs `README_KG.md` (deleted) + the build/VF/release/
+  upstream-sync guide, incl. the static-vs-VF asymmetry note.
 
 ## Execution Protocol
 

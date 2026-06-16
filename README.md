@@ -1,159 +1,119 @@
-# Customize Recursive for Code
+# Moxy
 
 ```
-#                                             /$$$$$$     /$$                  
-#                                            /$$    /    /  /             $$$  
-#    /$$$$$$$    /$$$$$$$    /$$ $$$$$    /$$$$$$$$$   /$$$$$      /$$$$$$$ /  
-#   /$$_____/   /$$____ $$  | $$$___ $$  |___ $$___/  |___ $$     /$$     $$   
-#  | $$        | $$   | $$  | $$   | $$     | $$         | $$    \  $$$$$$$    
-#  | $$        | $$   | $$  | $$   | $$     | $$         | $$     \  $$   /    
-#  \  $$$$$$$  \  $$$$$$$   | $$   | $$   /$$$$$$$$$  /$$$$$$$$$  / $$$$$$$$   
-#   \_______/   \_______/   |__/   |__/  |_________/ |_________/ | $$      $$  
-#                                                                \  $$$$$$$$   
-#                                                                 \_______/    
+   __  __   ___  __  __  __   __
+  |  \/  | / _ \ \ \/ /  \ \ / /
+  | |\/| || (_) | >  <    \ V /
+  |_|  |_| \___/ /_/\_\    |_|
 ```
 
-You can get premade Recursive fonts for Desktop, Web, & Code at https://github.com/arrowtype/recursive/releases/latest. If you are just looking for the premade fonts for code, they are also in this repo within the `fonts` folder. But, if you want to customize your own build of Recursive for Code, you can run the script in this repo!
+**Moxy** is a monospaced coding font. It's built on
+[Recursive](https://www.recursive.design/) (Recursive Mono Casual) and folds in a
+handful of code-friendly glyph tweaks borrowed from
+[Lilex](https://github.com/mishamyrt/Lilex) — curvy parentheses, connected
+dashes, connected bars, a thin "escape" backslash, extra arrow characters, and
+Recursive-style long arrows.
 
-If you find issues in this customization workflow, please report them in this repo’s [Issues](https://github.com/arrowtype/recursive-code-config/issues).
+Out of the box Moxy gives you the opinionated, customized look. If you ever want
+plain Recursive back, it's one or two font-features away (variable font only — see
+[What's different](#whats-different-from-recursive)).
 
-If you find issues in the fonts themselves, please report them in the [Recursive project Issues](https://github.com/arrowtype/recursive/issues).
+## Install
 
-
-## Usage
-
-The basic way to use this tool is to:
-
-1. Clone the repo and install dependencies (you may wish to fork first, so you can save your preferences to GitHub)
-2. Configure your font options in `config.yaml`
-3. Run the build script
-4. Install the fonts and activate `calt` in your coding app, if you want the code ligatures to be active
-
-This instantiates custom fonts for Regular, Italic, Bold, and Bold Italic styles, which you can then use in your preferred editor. One VS Code theme that supports Italics is the [Recursive Theme](https://github.com/arrowtype/recursive-theme).
-
-### Video tutorial for Python beginners
-
-Here’s a step-by-step video tutorial, if you aren’t used to working with Python projects like this one:
-
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/xEVrdlp24ss/0.jpg)](https://www.youtube.com/watch?v=xEVrdlp24ss)
-
-You can also follow the instructions below. I have tried to make them pretty granular. My advice is to try the instructions below, and watch the video if you get stuck. If you get _really_ stuck, please [file an issue](https://github.com/arrowtype/recursive-code-config/issues))! It may not be your fault.
-
-### Step-by-step guide
-
-#### Prerequisites for this Python project
-
-- To work directly with these examples, you should have [Git set up on your computer](https://help.github.com/en/github/getting-started-with-github/set-up-git).
-- To run the font-building script, you must also [Download Python](http://python.org/download/) and install it if you haven’t already.
-- This uses a virtual environment to keep installed Python modules contained. If you are used to using node_modules in a JavaScript-based project, it’s somewhat similar to that.
-
-In a terminal, use `cd` to get to a folder you want this project in. Then, clone the repo and move into it:
-
-```
-git clone https://github.com/arrowtype/recursive-code-config.git
-cd recursive-code-config
-```
-
-##### Using the venv, on macOS (and maybe Linux?)
-
-Then, set up the venv and install requirements:
+**Homebrew (recommended):**
 
 ```bash
-python3 -m venv venv             # make a virtual environment called "venv"
-source venv/bin/activate         # activate the virtual environment
-pip install -r requirements.txt  # install dependencies
+brew install --cask kaushikgopal/tools/font-moxy
 ```
 
-##### Using the venv, on Windows
+> Upgrading from the old `font-recursive-kg` cask? Run
+> `brew uninstall --cask font-recursive-kg` first, then install `font-moxy`.
 
-Setting up the venv and install requirements is slightly different in Windows, in my testing. Navigate to the project in a terminal, and then use the following commands:
+**Manual:** download the latest `moxy-<version>.zip` from
+[Releases](https://github.com/kaushikgopal/font-moxy/releases/latest), unzip, and
+install the `.ttf` files (macOS: open them in Font Book).
 
-```bash
-py -m venv venv                  # make a virtual environment called "venv"
-venv\Scripts\activate            # activate the virtual environment 
-pip install -r requirements.txt  # install dependencies
+The cask ships eight static styles — Regular, Italic, Semibold, Semibold Italic,
+Bold, Bold Italic, Black, Black Italic.
+
+### Use it
+
+Set the family name to **`Moxy`** in your editor / terminal. In
+[Ghostty](https://ghostty.org):
+
+```ini
+font-family = Moxy
 ```
 
-#### 1. Customize your font settings in `config.yaml`
+Most editors enable contextual ligatures (`calt`) by default, which is what Moxy
+uses for connected dashes, long arrows, and the rest. In VS Code, turn them on
+with:
 
-This file uses YAML. Hopefully, it is fairly self-explanatory. If not, file an issue and someone will hopefully help out!
-
-First, specify the family name you want (e.g. `Rec Mono Custom`). 
-
-Then, specify axis values you want for Regular, Italic, Bold, & Bold Italic fonts.
-
-Then, specify whether you want code ligatures on by default. Mark `True` for yes or `False` for no.
-
-Finally, you can copy in the font feature options you want:
-
-```yaml
-# These options only have an affect at CRSV<=0.5 (Roman/normal styles)
-- ss01 # Single-story a
-- ss02 # Single-story g
-- ss03 # Simplified f
-- ss04 # Simplified i
-- ss05 # Simplified l
-- ss06 # Simplified r
-
-# These options affect both Roman & Cursive styles
-- ss07 # Simplified italic diagonals (kwxyz) ### NOT CURRENTLY WORKING, see issue #4
-- ss08 # No-serif L and Z
-- ss09 # Simplified 6 and 9
-- ss10 # Dotted 0
-- ss11 # Simplified 1
-- ss12 # Simplified @
+```jsonc
+"editor.fontLigatures": true
 ```
 
-![OpenType features](font-data/img/recursive-ot_features.png)
+## What's different from Recursive
 
-If you want to turn off all features, you can specify an empty array in YAML like this:
+Compared to stock Recursive Mono Casual, Moxy changes these by default:
 
-```yaml
-Features: []
+| | Recursive | Moxy (default) |
+|---|---|---|
+| Parentheses `( )` | upright | curvier (Lilex cv13) |
+| `---` / `----…` | separate dashes | one connected line |
+| `\|>` `<\|` | bar + arrow | connected (Lilex cv11) |
+| Escape `\` in `\n` `\t` … | normal weight | thinner (escape-only) |
+| Long arrows `--->` `<---` `<-->` | break apart | connect at any length |
+| `f r L Z 0 1` | Recursive default | simplified f/r, serifless L/Z, dotted 0, simplified 1 |
+| Extra arrows (↩ ↪ ↰ ⇄ …) | absent | 12 added |
+
+The **variable font** (see [CUSTOMIZING.md](CUSTOMIZING.md)) additionally lets you
+dial these back toward Recursive with opt-in features:
+
+- `lilx` — turn **off** the Lilex tweaks (parens, connected dashes/bars, thin
+  backslash) and get Recursive's shapes back.
+- `ss13` — "Alt. Recursive choices": restore Recursive's `f r L Z 0 1`.
+- `ss03 / ss06 / ss08 / ss10 / ss11` — restore one letterform at a time.
+
+Enabling `lilx` **and** `ss13` returns the (revertible) glyphs to pristine
+Recursive. In Ghostty:
+
+```ini
+# plain Recursive look from the Moxy variable font
+font-feature = lilx, ss13
 ```
 
-#### 2. Build the fonts!
+> The added arrow characters and the long-arrow fix are additive and always on.
+> These toggles live in the **variable font**; the static styles shipped via the
+> cask are frozen to the look you see by default.
 
-Build the fonts by running the main Python script in the project:
+## Everything else is Recursive
 
-```bash
-source venv/bin/activate         # activate the virtual environment if you haven’t already
-python3 scripts/instantiate-code-fonts.py
-```
+Moxy inherits Recursive's design and its five variable axes
+(Monospace, Casual, Weight, Slant, Cursive) in the variable font. For the full
+story on Recursive, see [recursive.design](https://www.recursive.design/).
 
-It will build & output fonts to a folder like `RecMono-Custom` (this is affected by whatever custom name you give fonts in config.yaml).
+## Build / customize from source
 
-#### 3. Install the fonts and activate the ligatures!
+Moxy is generated from the Recursive variable font plus a small set of scripts.
+See **[CUSTOMIZING.md](CUSTOMIZING.md)** to build the static fonts, build the
+variable font, tweak which features are baked in, or cut a release.
 
-This project saves the “code ligatures” to the `calt` feature of fonts, which is the feature most often used by code editors to control code ligatures.
+## Attribution & license
 
-In many apps, the `calt` feature will be on by default. In others, like VS Code, you will need to specifically turn it on. 
+Moxy stands on the shoulders of two open-source typefaces — please keep their
+notices when redistributing:
 
-In VS Code specifically, you can turn on `calt` by adding `fontLigatures` into the `settings.json` file and setting it to `true`:
+- **[Recursive](https://github.com/arrowtype/recursive)** by Arrow Type / Stephen
+  Nixon — the base design and variable font (SIL Open Font License 1.1).
+- **[Lilex](https://github.com/mishamyrt/Lilex)** by Mikhael Khrustik — the
+  borrowed code glyphs (SIL Open Font License 1.1). The OFL text ships in the
+  release as `Lilex-OFL.txt`.
 
-```JSON
-    "editor.fontLigatures": true
-```
+Neither Recursive nor Lilex carries a Reserved Font Name, so the "Moxy" naming is
+OFL-compliant. The build tooling in this repository is MIT licensed (see
+[`LICENSE`](LICENSE)).
 
-#### Building with other config files
-
-If you wish to build fonts with premade configurations (or reference these), just add their path as an argument (replace `premade-configs/duotone.yaml` below):
-
-```bash
-python3 scripts/instantiate-code-fonts.py premade-configs/duotone.yaml
-```
-
-This argument may also be helpful if you wish to create multiple custom versions. To experiment, just duplicate the `config.yaml` with a new filename, change the `Family Name` option, and run the script pointing to that new config file.
-
-Happy coding!
-
-## Updating to new versions of Recursive (maintainer notes)
-
-Recursive gets periodic updates, and this repo needs to get these updates, as well.
-
-Currently, the process to bring in those updates is pretty simple:
-
-1. Copy the latest variable font (e.g. `Recursive_VF_1.0xx.ttf`) into the `font-data` folder, and delete the old one
-3. Activate the `venv` and run `scripts/build-all.sh <FONTPATH>` to build updated versions of the fonts
-
-Then, you can run the build according to the instructions above.
+Issues with the build workflow → file them here. Issues with the underlying
+shapes → upstream at [Recursive](https://github.com/arrowtype/recursive/issues)
+or [Lilex](https://github.com/mishamyrt/Lilex/issues).
