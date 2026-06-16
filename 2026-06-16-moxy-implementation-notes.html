@@ -181,24 +181,21 @@
   collision risk for a personal coding font; <strong>confirm before any public/commercial
   release</strong>. No OFL blocker (neither Recursive nor Lilex carries a Reserved Font Name).
 </div>
-<div class="entry"><span class="tag t-open">open</span><time>2026-06-16 · cask</time>
-  <code>homebrew-tools/Casks/font-moxy.rb</code> was hand-rewritten (token/name/paths/url for
-  Moxy) but <strong>left uncommitted</strong> in that separate repo, and its <code>sha256</code>
-  is still the old value &mdash; the next <code>make package</code> / <code>update-moxy</code>
-  run recomputes <code>sha256</code>/<code>url</code> against the real v39 release and commits it.
-  No GitHub release was created (not requested).
+<div class="entry"><span class="tag t-decision">resolved</span><time>2026-06-16 · release</time>
+  <strong>Versioning reset to v1</strong> for Moxy (fresh start; dropped the inherited
+  Recursive KG v38 lineage). <code>config.moxy.yaml</code> &rarr; <code>Version: "1"</code>.
+  GitHub release <strong>Moxy v1</strong> published on <code>kaushikgopal/font-moxy</code> with
+  two assets: <code>moxy-1.zip</code> (8 static styles + Lilex OFL + LICENSE — what the cask
+  installs) and <code>Moxy-VF-1.085.ttf</code> (the variable font with the toggles). The cask
+  <code>font-moxy.rb</code> was updated to <code>version "1"</code> + the real
+  <code>sha256</code> and pushed; verified the published zip's sha matches the cask, so
+  <code>brew install --cask kaushikgopal/tools/font-moxy</code> resolves end-to-end.
 </div>
 
-<div class="entry"><span class="tag t-open">open</span><time>2026-06-16 · repo rename (manual)</time>
-  The GitHub repo + local dir + git remote rename was <strong>intentionally not
-  executed</strong> — it's a live/destructive op that also breaks this session's working
-  path. Run it yourself when ready:
-  <br><code>gh repo rename font-moxy -R kaushikgopal/recursive-code-config</code>
-  <br><code>cd .. &amp;&amp; mv recursive-code-config font-moxy &amp;&amp; cd font-moxy</code>
-  <br><code>git remote set-url origin https://github.com/kaushikgopal/font-moxy.git</code>
-  <br>Then cut a release (<code>make package</code> or <code>/update-moxy</code>): it refreshes
-  the cask's <code>sha256</code>/<code>url</code> against the real v39 zip and commits
-  <code>homebrew-tools/Casks/font-moxy.rb</code>.
+<div class="entry"><span class="tag t-decision">resolved</span><time>2026-06-16 · repo rename</time>
+  The GitHub repo + local dir + git remote were renamed to <strong>font-moxy</strong> (done by
+  the human). Remote now <code>github.com/kaushikgopal/font-moxy.git</code>; local dir
+  <code>/Users/kg/dev/oss/font-moxy</code>.
 </div>
 
 </body>
