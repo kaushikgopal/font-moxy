@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moxy — Implementation Notes (2026-06-16)</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; }
+  h1 { font-size: 1.6rem; border-bottom: 2px solid currentColor; padding-bottom: .3rem; }
+  h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #8884; padding-bottom: .2rem; }
+  h3 { font-size: 1.02rem; margin-top: 1.3rem; }
+  code, kbd { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .88em;
+              background: #8881; padding: .05em .35em; border-radius: 4px; }
+  .meta { opacity: .75; font-size: .9rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist li { margin: .2rem 0; }
+  .done::before { content: "\2705 "; }
+  .wip::before  { content: "\1F6A7 "; }
+  .todo::before { content: "\2B1C "; }
+  .phase { font-weight: 600; margin-top: .8rem; }
+  .entry { border-left: 3px solid #8884; padding: .2rem 0 .2rem .8rem; margin: .8rem 0; }
+  .tag { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+         text-transform: uppercase; padding: .1em .5em; border-radius: 5px; margin-right: .4rem; }
+  .t-decision { background: #2d7dd233; }
+  .t-deviation { background: #d2693433; }
+  .t-tradeoff { background: #7d2dd233; }
+  .t-open { background: #d2b83433; }
+  time { opacity: .6; font-size: .8rem; }
+  table { border-collapse: collapse; width: 100%; margin: .6rem 0; }
+  th, td { border: 1px solid #8884; padding: .35rem .5rem; text-align: left; font-size: .9rem; }
+</style>
+</head>
+<body>
+
+<h1>Moxy — Implementation Notes</h1>
+<p class="meta">
+  Plan: <code>.agents/plans/2026-06-16-moxy-rename-and-readme-plan.md</code> &middot;
+  Started 2026-06-16 &middot; Running log of how the implementation interprets / diverges
+  from the spec. Authoritative decisions also land in the plan's Decision Log; this file is
+  the reader-friendly companion.
+</p>
+<p class="meta">
+  <strong>Commit convention (per request):</strong> commit #1 checks in the exec plan; the
+  final commit <em>deletes</em> the exec plan so it lives in history without polluting the
+  tree. This notes file persists.
+</p>
+
+<h2>Task checklist (mirrors the plan)</h2>
+
+<p class="phase">Setup</p>
+<ul class="checklist">
+  <li class="wip" id="t-commit1">Commit #1: check in exec plan + this notes scaffold</li>
+</ul>
+
+<p class="phase">Phase A — invert VF defaults (Option B); GATE-0 resolved = go</p>
+<ul class="checklist">
+  <li class="todo">Re-run VF build; confirm clean baseline</li>
+  <li class="todo">Install dev deps (Pillow, uharfbuzz) for the spike</li>
+  <li class="todo">GATE-1: does CoreText apply the new <code>calt</code> by default?</li>
+  <li class="todo">GATE-2: escape backslash reverts via Type-4 ligature (<code>\n</code> re-forms when <code>lilx</code> on)</li>
+  <li class="todo">GATE-3: mono-default rebase preserves new <code>calt</code> + reverse lookups</li>
+  <li class="todo">Helpers: reverse single-sub, Type-4 ligature-reverse, cmap-remap</li>
+  <li class="todo">Parens + letters: cmap default + reverse subs (<code>lilx</code>/<code>ssNN</code>/<code>ss13</code>), stem-sibling coverage</li>
+  <li class="todo">Connected bars + <code>---</code>: default connected; add <code>calt</code> ref'ing <code>dlig</code>; reverse &rarr; <code>lilx</code></li>
+  <li class="todo">Thin backslash + &ge;4 dash chain: default via <code>calt</code>; reverse &rarr; <code>lilx</code></li>
+  <li class="todo">Replace <code>ss13</code> forward lookups w/ reverse; per-letter <code>ssNN</code> reverse; UI &ldquo;Alt. Recursive choices&rdquo;</li>
+  <li class="todo">Arrows: cmap straight (drop <code>.off</code> placeholders)</li>
+  <li class="todo"><code>repair_hvar</code> if new glyphs; full spike validation</li>
+</ul>
+
+<p class="phase">Phase B — rename &rarr; Moxy (static behavior unchanged)</p>
+<ul class="checklist">
+  <li class="todo">VF constants &rarr; <code>Moxy</code>/<code>Moxy-VF</code>; <code>DEFAULT_OUT</code> &rarr; <code>fonts/Moxy-VF/</code></li>
+  <li class="todo">Static naming &rarr; <code>Moxy</code>; folder <code>fonts/Moxy-Static/</code></li>
+  <li class="todo">Rename <code>config.kg.yaml</code> &rarr; <code>config.moxy.yaml</code></li>
+  <li class="todo">Rebrand comments/docstrings across <code>scripts/*.py</code></li>
+  <li class="todo">Makefile (static paths, zip, sed rewrite, version reconcile, bundle Lilex-OFL)</li>
+  <li class="todo">Skill dir &rarr; <code>update-moxy</code> + contents</li>
+  <li class="todo">Cask hand-rewrite &rarr; <code>font-moxy.rb</code> (other repo); Brewfiles</li>
+  <li class="todo">&ldquo;Moxy&rdquo; name diligence</li>
+</ul>
+
+<p class="phase">Phase C — docs</p>
+<ul class="checklist">
+  <li class="todo">Lean <code>README.md</code> (Moxy banner, install, what's-different, attribution)</li>
+  <li class="todo"><code>CUSTOMIZING.md</code> (absorb <code>README_KG.md</code>); delete <code>README_KG.md</code></li>
+</ul>
+
+<p class="phase">Final</p>
+<ul class="checklist">
+  <li class="todo">Build + validate; remove dev deps; delete exec plan (last commit); repo rename (manual)</li>
+</ul>
+
+<h2>Design decisions</h2>
+<p class="meta">Choices made where the spec was ambiguous.</p>
+<div class="entry"><span class="tag t-decision">decision</span><time>2026-06-16</time>
+  Implementation-notes file lives at repo root and <em>persists</em> (only the exec plan is
+  deleted on the final commit). It mirrors the plan's task checklist and the Decision Log.
+</div>
+
+<h2>Deviations</h2>
+<p class="meta">Intentional departures from the spec, and why.</p>
+<p class="meta"><em>None yet.</em></p>
+
+<h2>Tradeoffs</h2>
+<p class="meta">Alternatives considered and why the chosen path won.</p>
+<p class="meta"><em>None yet.</em></p>
+
+<h2>Open questions</h2>
+<p class="meta">Things to confirm or revise.</p>
+<p class="meta"><em>None yet.</em></p>
+
+</body>
+</html>
