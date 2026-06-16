@@ -255,7 +255,7 @@ dropped; keep (3,1,0x409).
   added arrow chars go UNDER `lilx` (gated), not default.
 - 2026-06-15 - executor: VF build started. New separate source
   `scripts/build-variable-font.py` + helper `scripts/vf_lilex.py` (static build
-  untouched). Output `fonts/RecMonoCasualKG-VF/…` (gitignored). Decisions:
+  untouched). Output `fonts/RecursiveKG-VF/…` (gitignored). Decisions:
   * Default VF axes stay at OG (MONO0/CASL0/wght300/slnt0/CRSV0.5); nothing baked.
     VERIFIED default-instance outlines identical to OG Recursive (0/1304 diffs)
     and existing-glyph advances identical to OG across axes (HarfBuzz).
@@ -307,6 +307,15 @@ dropped; keep (3,1,0x409).
 - 2026-06-15 - executor: HVAR repair survives the rebase — the instancer rebuilds
   HVAR and our zero-variation new glyphs stay fixed 600/1200/1800 (verified in
   HarfBuzz at the new default and wght=1000).
+- 2026-06-15 - human: rename the VF family "Rec Mono Casual KG" -> "Recursive KG"
+  (matches the static build, which is already family "Recursive KG"). OFL-checked:
+  Recursive's license declares NO Reserved Font Name (copyright line has no "with
+  Reserved Font Name" clause), so "Recursive KG" is compliant. Kept a DISTINCT
+  PostScript name `RecursiveKG-VF` (vs the static `RecursiveKG-Regular`) so the VF
+  can't silently clash if both are installed. Output moved to
+  `fonts/RecursiveKG-VF/RecursiveKG[…].ttf`. Coexistence note: static (8 instances)
+  + VF now share family "Recursive KG"; if both are installed an app may merge/pick
+  — use one or the other (the VF covers all weights via the axes).
 - 2026-06-15 - executor: Recursive VF has NO `calt`; code ligatures live in `dlig`
   (e.g. L180 bar+greater→bar_greater.code) + one `liga` lookup. dlig ligates only
   `--`,`---` and the bounded arrows; runs of 4+ hyphens stay loose. So lilx's
@@ -373,7 +382,7 @@ dropped; keep (3,1,0x409).
     (append_lookup, single_sub_lookup, add_feature, feature_lookup_indices,
     wght_anchors, add_variable_glyph).
   - `scripts/vf_long_arrows.py` — default Recursive-style long arrows.
-  - Output (gitignored): `fonts/RecMonoCasualKG-VF/RecMonoCasualKG[MONO,CASL,wght,slnt,CRSV].ttf`.
+  - Output (gitignored): `fonts/RecursiveKG-VF/RecursiveKG[MONO,CASL,wght,slnt,CRSV].ttf`.
 
 ## Tasks
 
@@ -423,7 +432,7 @@ dropped; keep (3,1,0x409).
       (+ shear in italic). VERIFIED: monospacing preserved (advances multiples of
       600 at MONO=1 with all features); all axis instances compile; long arrows are
       a default dlig fix that leaves non-arrow dashes pristine. Output:
-      `fonts/RecMonoCasualKG-VF/RecMonoCasualKG[MONO,CASL,wght,slnt,CRSV].ttf`.
+      `fonts/RecursiveKG-VF/RecursiveKG[MONO,CASL,wght,slnt,CRSV].ttf`.
 
 ## Validation
 

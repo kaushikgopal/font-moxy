@@ -56,9 +56,12 @@ from vf_lilex import (  # noqa: E402
 RECURSIVE_VF = "font-data/Recursive_VF_1.085.ttf"
 LILEX_VF = "font-data/Lilex[wght].ttf"
 
-FAMILY = "Rec Mono Casual KG"
-PS_FAMILY = "RecMonoCasualKG"
-DEFAULT_OUT = "fonts/RecMonoCasualKG-VF/RecMonoCasualKG[MONO,CASL,wght,slnt,CRSV].ttf"
+FAMILY = "Recursive KG"
+# The displayed family matches the static build ("Recursive KG"), but the VF gets a
+# distinct PostScript name so it can't silently clash with the static instances'
+# "RecursiveKG-Regular" etc. if both are installed.
+PS_NAME = "RecursiveKG-VF"
+DEFAULT_OUT = "fonts/RecursiveKG-VF/RecursiveKG[MONO,CASL,wght,slnt,CRSV].ttf"
 
 # Recursive's own stylistic sets the user prefers, bundled under "Kaush's prefs":
 #   ss03 Simplified f, ss06 Simplified r, ss08 serifless L&Z, ss10 dotted 0,
@@ -67,7 +70,7 @@ KAUSH_SETS = ["ss03", "ss06", "ss08", "ss10", "ss11"]
 
 
 # ----------------------------------------------------------------------------
-# Name table — rename the family to "Rec Mono Casual KG", keep every axis.
+# Name table — rename the family to "Recursive KG", keep every axis.
 
 
 def rename_family(font: TTFont) -> None:
@@ -78,9 +81,9 @@ def rename_family(font: TTFont) -> None:
 
     setname(1, FAMILY)               # Font Family
     setname(2, "Regular")            # Subfamily (RIBBI default-instance label)
-    setname(3, f"1.085;ARRW;{PS_FAMILY}-Regular")  # Unique ID
+    setname(3, f"1.085;ARRW;{PS_NAME}")  # Unique ID
     setname(4, FAMILY)               # Full font name (default instance)
-    setname(6, f"{PS_FAMILY}-Regular")             # PostScript name
+    setname(6, PS_NAME)              # PostScript name (distinct from static build)
     setname(16, FAMILY)              # Typographic Family
     setname(17, "Regular")           # Typographic Subfamily
 
@@ -460,7 +463,7 @@ def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
     _ = font["gvar"]
     _ = font["HVAR"].table.AdvWidthMap.mapping
 
-    print("Renaming family -> 'Rec Mono Casual KG' (all 5 axes kept)")
+    print("Renaming family -> 'Recursive KG' (all 5 axes kept)")
     rename_family(font)
 
     print("Adding 'Kaush's preferences' bundle (ss13)")
