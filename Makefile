@@ -1,6 +1,15 @@
 # Default target
 default: build
 
+# === Config-derived names (so the family name can change freely) ===
+# The folder and file names follow the config's "Family Name" with spaces turned
+# into hyphens, e.g. Family Name "Moxy Static" -> folder/slug "Moxy-Static".
+CONFIG      := premade-configs/config.moxy.yaml
+SOURCE_VF   := $(firstword $(wildcard font-data/Recursive_VF_*.ttf))
+FAMILY      := $(shell grep '^Family Name:' $(CONFIG) | sed 's/.*"\([^"]*\)".*/\1/')
+FAMILY_SLUG := $(shell echo '$(FAMILY)' | tr ' ' '-')
+FONT_DIR    := fonts/$(FAMILY_SLUG)
+
 help:		## List all available commands with descriptions
 	@awk -F'##' '/^[a-zA-Z0-9_-]+:.*##/ {gsub(/:.*/, ":\t\t", $$1); printf "%s%s\n", $$1, $$2}' $(MAKEFILE_LIST) | \
 		awk 'NR%2==1 {print "\033[0m" $$0} NR%2==0 {print "\033[2m" $$0}'
@@ -19,15 +28,15 @@ setup:	## Set up Python environment and install dependencies
 
 # === Build Targets ===
 
-build:	## Build and install Moxy (static) code fonts on Mac
-	@echo "❌ removing existing Moxy fonts on Mac..."
-	@rm -rf ~/Library/Fonts/Moxy-* 2>/dev/null || true
-	@echo "❌ removing existing Moxy fonts in project..."
-	@rm -rf fonts/Moxy-Static* 2>/dev/null || true
-	@echo "🔨 Building Moxy fonts..."
-	@venv/bin/python scripts/instantiate-code-fonts.py premade-configs/config.moxy.yaml font-data/Recursive_VF_1.085.ttf
-	@echo "✅ Installing Moxy fonts on Mac..."
-	@cp fonts/Moxy-Static/*.ttf ~/Library/Fonts/
+build:	## Build and install the static code fonts on Mac
+	@echo "❌ removing existing $(FAMILY_SLUG) fonts on Mac..."
+	@rm -rf ~/Library/Fonts/$(FAMILY_SLUG)-* 2>/dev/null || true
+	@echo "❌ removing existing fonts in project..."
+	@rm -rf $(FONT_DIR) 2>/dev/null || true
+	@echo "🔨 Building $(FAMILY) fonts..."
+	@venv/bin/python scripts/instantiate-code-fonts.py $(CONFIG) $(SOURCE_VF)
+	@echo "✅ Installing $(FAMILY) fonts on Mac..."
+	@cp $(FONT_DIR)/*.ttf ~/Library/Fonts/
 
 build-vf:	## Build the Moxy variable font (canonical; carries the lilx/ss13 revert toggles)
 	@echo "🔨 Building Moxy variable font..."
@@ -43,9 +52,9 @@ package: build ## Package the static fonts + create GitHub release for homebrew
 	echo "📦 Starting package process..." && \
 	echo "📋 Version: $$VERSION, Font Version: $$FONT_VERSION" && \
 	echo "📄 Bundling attribution (Lilex OFL + LICENSE)..." && \
-	cp OFL.txt font-data/Lilex-OFL.txt LICENSE fonts/Moxy-Static/ 2>/dev/null || true && \
+	cp OFL.txt font-data/Lilex-OFL.txt LICENSE $(FONT_DIR)/ 2>/dev/null || true && \
 	echo "🗜️  Creating zip file..." && \
-	cd fonts && zip -r -X ../moxy-$$VERSION.zip Moxy-Static/ && cd .. && \
+	cd fonts && zip -r -X ../moxy-$$VERSION.zip $(FAMILY_SLUG)/ && cd .. && \
 	echo "🔐 Calculating SHA256..." && \
 	SHA=$$(shasum -a 256 moxy-$$VERSION.zip | awk '{print $$1}') && \
 	echo "$$SHA" | pbcopy && \
@@ -66,14 +75,20 @@ package: build ## Package the static fonts + create GitHub release for homebrew
 		cd .. && git clone https://github.com/kaushikgopal/homebrew-tools.git && cd font-moxy; \
 	fi && \
 	cd ../homebrew-tools && (git pull origin main || git pull origin master) && cd ../font-moxy && \
-	echo "   Updating version, sha256, and url..." && \
-	sed -i '' "s/version \".*\"/version \"$$VERSION\"/" ../homebrew-tools/Casks/font-moxy.rb && \
-	sed -i '' "s/sha256 \".*\"/sha256 \"$$SHA\"/" ../homebrew-tools/Casks/font-moxy.rb && \
-	sed -i '' "s|url \".*\"|url \"https://github.com/kaushikgopal/font-moxy/releases/download/v$$VERSION/moxy-$$VERSION.zip\"|" ../homebrew-tools/Casks/font-moxy.rb && \
-	echo "   Updating font paths..." && \
-	sed -i '' "s|font \"[^\"]*/Moxy-\([A-Za-z]*\)-[0-9.]*\.ttf\"|font \"Moxy-Static/Moxy-\1-$$FONT_VERSION.ttf\"|g" ../homebrew-tools/Casks/font-moxy.rb && \
-	echo "   Asserting cask was updated..." && \
-	grep -q "Moxy-Static/Moxy-Regular-$$FONT_VERSION.ttf" ../homebrew-tools/Casks/font-moxy.rb || { echo "❌ cask font paths did not update — check the sed pattern"; exit 1; } && \
+	echo "   Regenerating cask from the built fonts (family-name & style-count agnostic)..." && \
+	{ \
+		echo 'cask "font-moxy" do'; \
+		echo "  version \"$$VERSION\""; \
+		echo "  sha256 \"$$SHA\""; \
+		echo "  url \"https://github.com/kaushikgopal/font-moxy/releases/download/v$$VERSION/moxy-$$VERSION.zip\""; \
+		echo '  name "$(FAMILY)"'; \
+		echo '  desc "Monospaced coding font built on Recursive, with glyphs borrowed from Lilex"'; \
+		echo '  homepage "https://github.com/kaushikgopal/font-moxy"'; \
+		for f in $(FONT_DIR)/*.ttf; do echo "  font \"$(FAMILY_SLUG)/$$(basename "$$f")\""; done; \
+		echo 'end'; \
+	} > ../homebrew-tools/Casks/font-moxy.rb && \
+	echo "   Asserting cask was generated..." && \
+	grep -q "$(FAMILY_SLUG)/$(FAMILY_SLUG)-Regular-$$FONT_VERSION.ttf" ../homebrew-tools/Casks/font-moxy.rb || { echo "❌ cask generation failed — no Regular font line"; exit 1; } && \
 	echo "   Committing and pushing homebrew-tools..." && \
 	cd ../homebrew-tools && git add Casks/font-moxy.rb && \
 	git commit -m "update: moxy $$VERSION" && \

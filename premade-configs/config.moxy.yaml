@@ -1,4 +1,6 @@
 # Moxy — build config for the static instances (derived from Recursive + Lilex)
+# Remember this uses Recursive's original VF as a base (not Moxy's own VF)
+#   so feature-settings in this file alone will be flipped
 
 #
 #    __  __   ___  __  __  __   __
@@ -17,7 +19,7 @@
 # "Moxy-<Style>-<version>.ttf".
 # Keep under 13 characters in length to avoid potential OS bugs.
 
-Family Name: "Moxy"
+Family Name: "Moxy Static"
 # font version is derived from the VF source file (e.g., Recursive_VF_1.085.ttf)
 Version: "1"
 
@@ -48,45 +50,17 @@ Fonts:
     slnt: -15
     CRSV: 0
 
-  Semibold:
-    MONO: 1
-    CASL: 0.5
-    wght: 500
-    slnt: 0
-    CRSV: 0
-
-  Semibold Italic:
-    MONO: 1
-    CASL: 0
-    wght: 500
-    slnt: -15
-    CRSV: 0
-
   Bold:
     MONO: 1
     CASL: 0.5
-    wght: 700
+    wght: 600
     slnt: 0
     CRSV: 0
 
   Bold Italic:
     MONO: 1
     CASL: 0
-    wght: 700
-    slnt: -15
-    CRSV: 0
-
-  Black:
-    MONO: 1
-    CASL: 0.5
-    wght: 900
-    slnt: 0
-    CRSV: 0
-
-  Black Italic:
-    MONO: 1
-    CASL: 0
-    wght: 900
+    wght: 600
     slnt: -15
     CRSV: 0
 
@@ -207,7 +181,7 @@ Code Ligatures: True
 Features:
   # - ss01 # Single story a
   # - ss02 # Single story g
-  - ss03 # Simplified f
+  # - ss03 # Simplified f
   # - ss04 # Simplified i
   # - ss05 # Simplified l
   - ss06 # Simplified r

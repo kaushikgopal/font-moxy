@@ -128,6 +128,10 @@ git pull upstream main
 - `Pillow` and `uharfbuzz` are used only for dev-time rendering/shaping checks and
   are intentionally **not** in `requirements.txt`. Install them ad hoc
   (`venv/bin/python -m pip install Pillow uharfbuzz`) when verifying, then remove.
+- The README specimen images are generated from the built fonts by
+  `scripts/dev/render_specimens.py` (needs `Pillow`): rebuild the fonts, then
+  `venv/bin/python scripts/dev/render_specimens.py` writes `images/specimen.png`
+  and `images/comparison.png`.
 - The variable font carries all five Recursive axes (Monospace, Casual, Weight,
   Slant, Cursive); its default instance is Mono Casual Regular so the bare font is a
   usable terminal monospace.

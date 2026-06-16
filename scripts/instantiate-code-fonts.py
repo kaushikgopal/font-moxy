@@ -76,8 +76,10 @@ def setFontNameID(font, ID, newName):
 # MAIN FUNCTION
 
 # The string to find in the source (Recursive) name records. Moxy rebrands the
-# family to the config's "Family Name" directly (no "Recursive" prefix), e.g.
-# "Moxy" -> family "Moxy", folder "fonts/Moxy-Static", files "Moxy-<Style>-<ver>.ttf".
+# family to the config's "Family Name" directly (no "Recursive" prefix). Spaces in
+# the family name become hyphens in the folder and file names, e.g.
+# "Moxy Static" -> family "Moxy Static", folder "fonts/Moxy-Static",
+# files "Moxy-Static-<Style>-<ver>.ttf". (The PostScript name strips the spaces.)
 oldName = "Recursive"
 
 # OFL-1.1 license metadata baked into the name table (id 0/13/14). Moxy derives
@@ -95,7 +97,9 @@ LICENSE_DESC = (
 LICENSE_URL = "https://openfontlicense.org"
 
 def splitFont(
-        outputDirectory=f"{fontOptions['Family Name']}-Static".replace(" ",""),
+        # Folder mirrors the family name, spaces -> hyphens:
+        #   "Moxy Static" -> "Moxy-Static", "Moxy X123" -> "Moxy-X123".
+        outputDirectory=fontOptions['Family Name'].replace(" ", "-"),
 ):
 
     # access font as TTFont object
@@ -164,8 +168,12 @@ def splitFont(
         setFontNameID(instanceFont, 13, LICENSE_DESC)
         setFontNameID(instanceFont, 14, LICENSE_URL)
 
+        # Filename mirrors the family name with spaces -> hyphens (like the folder),
+        # while the style stays a single token, e.g. "Moxy Static" + "Bold Italic"
+        # -> "Moxy-Static-BoldItalic-<ver>.ttf". (NameID 6 / PostScript name above
+        # strips spaces instead, since PostScript names may not contain spaces.)
         newFileName = fontFileName\
-            .replace(oldName, fontOptions['Family Name'].replace(" ", ""))\
+            .replace(oldName, fontOptions['Family Name'].replace(" ", "-"))\
             .replace("_VF_", "-" + instance.replace(" ", "") + "-")
 
         # make dir for new fonts
