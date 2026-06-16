@@ -40,7 +40,14 @@ from fontTools.ttLib import TTFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from vf_lilex import add_feature, feature_lookup_indices  # noqa: E402
+from vf_lilex import (  # noqa: E402
+    add_feature,
+    append_lookup,
+    feature_lookup_indices,
+    graft_variable_alternate,
+    single_sub_lookup,
+    wght_anchors,
+)
 
 RECURSIVE_VF = "font-data/Recursive_VF_1.085.ttf"
 LILEX_VF = "font-data/Lilex[wght].ttf"
@@ -92,17 +99,65 @@ def add_kaush_preferences(font: TTFont) -> None:
 
 
 # ----------------------------------------------------------------------------
+# lilx tweak: curvy parentheses (Lilex cv13) as variable alternates.
+
+
+def add_curvy_parens(font: TTFont, recursive_path: str) -> list[int]:
+    """Graft parenleft/right.lilx (variable) and return the substituting lookup.
+
+    Parens barely change stroke across MONO (≈50 at wght300, ≈240 at wght1000 for
+    both MONO 0 and 1), so MONO is frozen — only wght (300→1000) + slnt shear.
+    """
+    light, heavy = wght_anchors(
+        recursive_path,
+        target_glyph="parenleft",
+        source_path=LILEX_VF,
+        probe_source="parenleft.cv13",
+        axis="horizontal",
+    )
+    mapping = {}
+    for base, src in (("parenleft", "parenleft.cv13"),
+                      ("parenright", "parenright.cv13")):
+        alt = f"{base}.lilx"
+        graft_variable_alternate(
+            font,
+            source_path=LILEX_VF,
+            alt_name=alt,
+            source_glyphs=[src],
+            light_wght=light,
+            heavy_wght=heavy,
+        )
+        mapping[base] = alt
+    font.getReverseGlyphMap(rebuild=True)
+    idx = append_lookup(font, single_sub_lookup(mapping))
+    print(f"  • curvy parens (cv13): Lilex wght {light}->{heavy}, lookup {idx}")
+    return [idx]
+
+
+# ----------------------------------------------------------------------------
 
 
 def build(src_path: str, out_path: str) -> None:
     print(f"Loading {src_path}")
     font = TTFont(src_path)
+    # Force-decompile glyf/gvar now, before we add any glyphs — both store a
+    # glyphCount that is asserted against the (still-original) glyph order.
+    _ = font["glyf"]
+    _ = font["gvar"]
 
     print("Renaming family -> 'Rec Mono Casual KG' (all 5 axes kept)")
     rename_family(font)
 
     print("Adding 'Kaush's preferences' bundle (ss13)")
     add_kaush_preferences(font)
+
+    # ---- lilx: the ported-from-Lilex tweaks, all behind one opt-in tag --------
+    print("Building lilx feature (opt-in Lilex tweaks)")
+    lilx_lookups: list[int] = []
+    lilx_lookups += add_curvy_parens(font, src_path)
+
+    add_feature(font, feature_tag="lilx", lookup_indices=lilx_lookups)
+    print(f"  • lilx -> lookups {lilx_lookups}")
 
     # rebuild glyph-name cache before any compile/cmap touches new glyphs
     font.getReverseGlyphMap(rebuild=True)

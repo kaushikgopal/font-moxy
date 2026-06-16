@@ -71,6 +71,52 @@ def lilex_instance(source_path: str, wght: int) -> TTFont:
 
 
 # ----------------------------------------------------------------------------
+# Weight anchors: match Lilex to Recursive at the wght axis endpoints.
+
+_REC_INST_CACHE: dict[tuple[str, frozenset], TTFont] = {}
+
+
+def _recursive_instance(recursive_path: str, loc: dict) -> TTFont:
+    key = (recursive_path, frozenset(loc.items()))
+    if key not in _REC_INST_CACHE:
+        _REC_INST_CACHE[key] = instancer.instantiateVariableFont(
+            TTFont(recursive_path), loc, inplace=False
+        )
+    return _REC_INST_CACHE[key]
+
+
+def wght_anchors(
+    recursive_path: str,
+    *,
+    target_glyph: str,
+    source_path: str,
+    probe_source: str,
+    axis: str,
+    loc: dict | None = None,
+) -> tuple[int, int]:
+    """Return (light_wght, heavy_wght) Lilex weights whose `probe_source` stroke
+    matches Recursive's `target_glyph` stroke at wght 300 (axis default) and 1000
+    (axis max). `loc` pins the other axes for measuring (default: all OG defaults).
+    """
+    base = dict(loc or {})
+    light_loc = dict(base)
+    heavy_loc = dict(base, wght=1000)
+    sl = _measure_stroke(
+        _recursive_instance(recursive_path, light_loc)["glyf"][target_glyph],
+        _recursive_instance(recursive_path, light_loc).getGlyphSet(),
+        axis,
+    )
+    sh = _measure_stroke(
+        _recursive_instance(recursive_path, heavy_loc)["glyf"][target_glyph],
+        _recursive_instance(recursive_path, heavy_loc).getGlyphSet(),
+        axis,
+    )
+    light_w, _ = _match_source_weight(source_path, probe_source, axis, sl)
+    heavy_w, _ = _match_source_weight(source_path, probe_source, axis, sh)
+    return light_w, heavy_w
+
+
+# ----------------------------------------------------------------------------
 # Geometry: decompose Lilex source glyph(s) to a simple contour outline.
 
 
