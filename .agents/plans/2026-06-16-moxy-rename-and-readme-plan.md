@@ -332,6 +332,33 @@ End state: a single lean, user-facing **`README.md`** plus a **`CUSTOMIZING.md`*
   static work is **rename-only** (no re-architecture); the inverted VF's revert
   toggles still matter (canonical + future source). The technical spike gates
   (G1 CoreText, G2 ligature-reverse, G3 rebase) remain.
+- 2026-06-16 - executor: **Phase A implemented + verified** (new module
+  `scripts/vf_invert.py`, wired into `build-variable-font.py` after lilx/ss13,
+  before the mono-rebase). Mechanism: parens + 12 arrows → cmap default; a NEW
+  default-on `calt` carries Recursive's `dlig` ligatures + long arrows + the
+  forward `ss03/06/08/10/11` (simplified letters) + the lilx connected/thin
+  lookups; `lilx` rebuilt as the revert (Type-4 religature for `\X` + unconditional
+  single-subs sending every `*.lilx`/`*.seq` glyph back to Recursive); `ss03/06/08/
+  10/11`+`ss13` rebuilt as letter reverts; `ss13` UI name → "Alt. Recursive
+  choices". Verified (uharfbuzz, MONO 0/1): default = full Moxy; `lilx`/`ss13`/each
+  `ssNN` revert correctly; `lilx`+`ss13` = pristine Recursive glyph names;
+  monospacing 600/1200/1800 everywhere; all tables compile.
+  - GATE-2 (escape religature) PASSED; GATE-3 (rebase preserves calt+reverts)
+    PASSED (verified on the final post-rebase font).
+  - GATE-1 (CoreText): HarfBuzz default-on `calt` verified; `calt` wired into
+    DefaultLangSys; CoreText applies `calt` by default as standard — full pixel
+    verification deferred to on-install (can't drive a CoreText app here). OPEN.
+  - DEVIATION: letter reverts are tuned to the canonical MONO=1 (Mono) default —
+    they restore the `.mono` form. At MONO=0 (Sans), reverting via `ssNN`/`ss13`
+    yields `f.mono`/`r.mono` rather than sans `f`/`r` (the forward `ss` maps are
+    many-to-one, so a single-sub revert can't be MONO-aware). Accepted: Moxy's
+    canonical location is MONO=1.
+  - "Pristine Recursive" = identical within <1 unit; the residual sub-unit delta is
+    the pre-existing mono-rebase rounding (handoff "±1 unit"), not a Phase A change
+    (the inversion never touches glyf/gvar).
+  - DECISION: ligatures are now DEFAULT-ON in the VF (via `calt`), matching the
+    static build's dlig2calt and the "customized by default" goal; `dlig` is kept
+    too (harmless).
 
 ## Execution Protocol
 

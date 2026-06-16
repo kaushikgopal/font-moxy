@@ -51,23 +51,34 @@
 
 <p class="phase">Setup</p>
 <ul class="checklist">
-  <li class="wip" id="t-commit1">Commit #1: check in exec plan + this notes scaffold</li>
+  <li class="done" id="t-commit1">Commit #1: check in exec plan + this notes scaffold</li>
 </ul>
 
 <p class="phase">Phase A — invert VF defaults (Option B); GATE-0 resolved = go</p>
 <ul class="checklist">
-  <li class="todo">Re-run VF build; confirm clean baseline</li>
-  <li class="todo">Install dev deps (Pillow, uharfbuzz) for the spike</li>
-  <li class="todo">GATE-1: does CoreText apply the new <code>calt</code> by default?</li>
-  <li class="todo">GATE-2: escape backslash reverts via Type-4 ligature (<code>\n</code> re-forms when <code>lilx</code> on)</li>
-  <li class="todo">GATE-3: mono-default rebase preserves new <code>calt</code> + reverse lookups</li>
-  <li class="todo">Helpers: reverse single-sub, Type-4 ligature-reverse, cmap-remap</li>
-  <li class="todo">Parens + letters: cmap default + reverse subs (<code>lilx</code>/<code>ssNN</code>/<code>ss13</code>), stem-sibling coverage</li>
-  <li class="todo">Connected bars + <code>---</code>: default connected; add <code>calt</code> ref'ing <code>dlig</code>; reverse &rarr; <code>lilx</code></li>
-  <li class="todo">Thin backslash + &ge;4 dash chain: default via <code>calt</code>; reverse &rarr; <code>lilx</code></li>
-  <li class="todo">Replace <code>ss13</code> forward lookups w/ reverse; per-letter <code>ssNN</code> reverse; UI &ldquo;Alt. Recursive choices&rdquo;</li>
-  <li class="todo">Arrows: cmap straight (drop <code>.off</code> placeholders)</li>
-  <li class="todo"><code>repair_hvar</code> if new glyphs; full spike validation</li>
+  <li class="done">Re-run VF build; confirm clean baseline</li>
+  <li class="done">Install dev deps (Pillow, uharfbuzz) for the spike</li>
+  <li class="done">GATE-1: CoreText &mdash; <code>calt</code> wired into DefaultLangSys, HarfBuzz default-on verified; CoreText pixel-check deferred to install (OPEN)</li>
+  <li class="done">GATE-2: escape backslash reverts via Type-4 ligature (<code>\n</code> re-forms when <code>lilx</code> on) &mdash; PASSED</li>
+  <li class="done">GATE-3: mono-default rebase preserves new <code>calt</code> + reverse lookups &mdash; PASSED (verified on final font)</li>
+  <li class="done">Helpers: reverse single-sub, Type-4 ligature-reverse, cmap-remap (<code>scripts/vf_invert.py</code>)</li>
+  <li class="done">Parens + arrows &rarr; cmap default; parens revert via <code>lilx</code></li>
+  <li class="done">Connected bars + <code>---</code> + dashes + thin backslash + Recursive ligatures + long arrows &rarr; default-on <code>calt</code></li>
+  <li class="done">Letterforms forward &rarr; <code>calt</code>; <code>ss03/06/08/10/11</code>+<code>ss13</code> rebuilt as reverts; UI &ldquo;Alt. Recursive choices&rdquo;</li>
+  <li class="done">Arrows: cmap straight (placeholders bypassed)</li>
+  <li class="done">Full spike validation (monospacing, per-letter toggles, table compile, outline identity)</li>
+</ul>
+
+<p class="phase">Phase B — rename &rarr; Moxy (static behavior unchanged)</p>
+<ul class="checklist">
+  <li class="todo">VF constants &rarr; <code>Moxy</code>/<code>Moxy-VF</code>; <code>DEFAULT_OUT</code> &rarr; <code>fonts/Moxy-VF/</code></li>
+  <li class="todo">Static naming &rarr; <code>Moxy</code>; folder <code>fonts/Moxy-Static/</code></li>
+  <li class="todo">Rename <code>config.kg.yaml</code> &rarr; <code>config.moxy.yaml</code></li>
+  <li class="todo">Rebrand comments/docstrings across <code>scripts/*.py</code></li>
+  <li class="todo">Makefile (static paths, zip, sed rewrite, version reconcile, bundle Lilex-OFL)</li>
+  <li class="todo">Skill dir &rarr; <code>update-moxy</code> + contents</li>
+  <li class="todo">Cask hand-rewrite &rarr; <code>font-moxy.rb</code> (other repo); Brewfiles</li>
+  <li class="todo">&ldquo;Moxy&rdquo; name diligence</li>
 </ul>
 
 <p class="phase">Phase B — rename &rarr; Moxy (static behavior unchanged)</p>
@@ -99,18 +110,74 @@
   Implementation-notes file lives at repo root and <em>persists</em> (only the exec plan is
   deleted on the final commit). It mirrors the plan's task checklist and the Decision Log.
 </div>
+<div class="entry"><span class="tag t-decision">decision</span><time>2026-06-16 · Phase A</time>
+  The inversion lives in a new module <code>scripts/vf_invert.py</code>, called late in
+  <code>build-variable-font.py</code> (after <code>lilx</code>/<code>ss13</code>/long-arrows,
+  before the mono-rebase). It edits only <strong>cmap + GSUB</strong> (no new glyphs), so
+  <code>repair_hvar</code> is not needed after it. Categories: parens + 12 arrows &rarr; cmap
+  default; a NEW default-on <code>calt</code> carries Recursive <code>dlig</code> ligatures +
+  long arrows + forward <code>ss03/06/08/10/11</code> + the lilx connected/thin lookups;
+  <code>lilx</code>/<code>ssNN</code>/<code>ss13</code> rebuilt as reverts.
+</div>
+<div class="entry"><span class="tag t-decision">decision</span><time>2026-06-16 · Phase A</time>
+  <strong>Code ligatures are now default-on in the VF</strong> (registered under the new
+  <code>calt</code>, which HarfBuzz/CoreText apply by default). This makes the full Moxy look
+  &mdash; including connected dashes/bars and long arrows &mdash; render with zero ghostty
+  config, matching the static build (which already uses <code>dlig2calt</code>). The original
+  <code>dlig</code> feature is kept too (harmless; lets a user still request it explicitly).
+</div>
 
 <h2>Deviations</h2>
 <p class="meta">Intentional departures from the spec, and why.</p>
-<p class="meta"><em>None yet.</em></p>
+<div class="entry"><span class="tag t-deviation">deviation</span><time>2026-06-16 · Phase A</time>
+  <strong>Letter reverts are MONO=1-tuned.</strong> Recursive's forward <code>ss</code> maps
+  are many-to-one (<code>f</code> <em>and</em> <code>f.mono</code> both &rarr;
+  <code>f.simple</code>), so a single-substitution revert can't be MONO-aware. The revert
+  restores the <code>.mono</code> form (correct at Moxy's canonical MONO=1 / Mono default). At
+  <strong>MONO=0 (Sans)</strong>, enabling <code>ssNN</code>/<code>ss13</code> yields
+  <code>f.mono</code>/<code>r.mono</code> instead of the sans <code>f</code>/<code>r</code>.
+  Accepted: Moxy lives at MONO=1; the Sans-revert edge case is cosmetic.
+</div>
+<div class="entry"><span class="tag t-deviation">deviation</span><time>2026-06-16 · Phase A</time>
+  &ldquo;<code>lilx</code>+<code>ss13</code> = pristine Recursive&rdquo; holds to within
+  <strong>&lt;1 unit</strong>. The residual sub-unit delta is the <em>pre-existing</em>
+  mono-default-rebase rounding (handoff: &ldquo;±1 unit&rdquo;), not a Phase A change &mdash;
+  the inversion never touches <code>glyf</code>/<code>gvar</code>. The 12 arrows + long-arrow
+  fix are additive/always-on, so the reverted font is &ldquo;Recursive + arrows&rdquo;.
+</div>
 
 <h2>Tradeoffs</h2>
 <p class="meta">Alternatives considered and why the chosen path won.</p>
-<p class="meta"><em>None yet.</em></p>
+<div class="entry"><span class="tag t-tradeoff">tradeoff</span><time>2026-06-16 · Phase A</time>
+  <strong>cmap remap vs. default-on feature</strong> for the letterforms: a cmap remap to
+  <code>f.simple</code> would fight Recursive's <code>rvrn</code> MONO swap (<code>f &rarr;
+  f.mono</code>). Putting the forward <code>ss</code> lookups in a default-on <code>calt</code>
+  instead composes cleanly with <code>rvrn</code> at every MONO value (verified at MONO 0/1).
+  cmap remap is still used for parens/arrows, which <code>rvrn</code> does not touch.
+</div>
+<div class="entry"><span class="tag t-tradeoff">tradeoff</span><time>2026-06-16 · Phase A</time>
+  <strong>Reverse via contextual re-analysis vs. unconditional single-subs.</strong> The Moxy
+  connected/thin glyphs (<code>*.lilx</code>, <code>*.seq</code>) only ever appear because the
+  default <code>calt</code> produced them, so reverting them unconditionally (plus one Type-4
+  religature for <code>\X</code> escapes) is both simpler and exactly correct &mdash; no need
+  to re-run the original contextual chains in reverse.
+</div>
 
 <h2>Open questions</h2>
 <p class="meta">Things to confirm or revise.</p>
-<p class="meta"><em>None yet.</em></p>
+<div class="entry"><span class="tag t-open">open</span><time>2026-06-16 · GATE-1</time>
+  <strong>CoreText pixel verification.</strong> HarfBuzz (ghostty &mdash; your primary) applies
+  the new default-on <code>calt</code>; verified empirically. CoreText applies <code>calt</code>
+  by default as standard and the feature is wired into <code>DefaultLangSys</code>, but I can't
+  drive a CoreText app (TextEdit/Safari) from here to confirm pixels. <strong>Please eyeball
+  the default Moxy look in a CoreText app once installed</strong> (esp. connected dashes / thin
+  backslash). If CoreText skips it, the cmap-level bits (parens, letters, arrows) still show;
+  only the contextual bits would need <code>font-feature</code> there.
+</div>
+<div class="entry"><span class="tag t-open">open</span><time>2026-06-16</time>
+  Confirm the MONO=0 letter-revert deviation above is acceptable (it is for a Mono-default
+  code font, but flagging since &ldquo;all axes reachable&rdquo; was a stated goal).
+</div>
 
 </body>
 </html>

@@ -95,14 +95,19 @@ def rename_family(font: TTFont) -> None:
 
 
 def add_kaush_preferences(font: TTFont) -> None:
+    # NOTE: invert_defaults() later REPLACES these forward lookups with the
+    # reverse (Recursive-restoring) ones; the UI name reflects the inverted
+    # meaning ("Alt. Recursive choices" = opt the five letterforms back to
+    # Recursive). We register the feature here so the name record + langsys
+    # wiring already exist.
     lookups = feature_lookup_indices(font, KAUSH_SETS)
     add_feature(
         font,
         feature_tag="ss13",
         lookup_indices=lookups,
-        ui_name="Kaush's preferences",
+        ui_name="Alt. Recursive choices",
     )
-    print(f"  • ss13 'Kaush's preferences' -> reuses lookups {lookups} "
+    print(f"  • ss13 'Alt. Recursive choices' -> (pre-inversion) lookups {lookups} "
           f"({'/'.join(KAUSH_SETS)})")
 
 
@@ -547,6 +552,13 @@ def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
 
     # rebuild glyph-name cache before any compile/cmap touches new glyphs
     font.getReverseGlyphMap(rebuild=True)
+
+    # ---- invert defaults: Moxy look becomes default; features become reverts -
+    # (plan Phase A / Option B). Runs after lilx/ss13/long-arrows exist, before
+    # the mono-default rebase. Adds no glyphs (cmap edits + appended lookups).
+    print("Inverting defaults (Moxy look default; lilx/ss13/ssNN become reverts)")
+    from vf_invert import invert_defaults
+    invert_defaults(font)
 
     # ---- make it mono-by-default ---------------------------------------------
     # Move the fvar DEFAULT to Mono Casual Regular (MONO=1, CASL=0.5, wght=375)
