@@ -273,6 +273,7 @@ def splitFont(
                 ui_name=ssCfg["name"],
                 glyph_map=ssCfg["glyphs"],
                 slant=fontOptions["Fonts"][instance]["slnt"],
+                escape_only=ssCfg.get("escape_only", False),
             )
             print(
                 f"\n\t• Added optional '{sres['feature']}' ({ssCfg['name']}) "

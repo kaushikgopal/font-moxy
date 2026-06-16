@@ -3,14 +3,21 @@ Add an optional OpenType stylistic set whose substitutions use glyphs borrowed
 from another font.
 
 Unlike the always-on borrows, this stays a real, toggleable feature in the
-output: it does nothing unless the application enables the feature tag. Used for
-Lilex's "thin backslash" (its ss03), so backslash only becomes thin when the user
-turns the set on (e.g. font-feature-settings "ss03").
+output: it does nothing unless the application enables the feature tag (e.g.
+ghostty `font-feature = ss03`). Used for the "thin backslash" (Lilex ss03).
 
-The new glyph(s) are imported weight-matched + sheared; a single-substitution
-lookup and a stylistic-set FeatureRecord are appended by hand and wired into every
-script's language systems, with a UI name added to the name table so editors can
-label the set.
+Two modes:
+  * plain   - substitute base -> alternate unconditionally (single sub).
+  * escape  - contextual: only substitute backslash when it acts as an escape,
+              i.e. it is FOLLOWED by an escape character, and it is NOT the 2nd
+              of a consecutive pair, and NOT a Windows drive path "`:\\`".
+              (User decision: thin only when serving an escape function.)
+
+GSUB is hand-built (otlLib/otTables), append-only — never feaLib, which would
+rewrite calt and disable Recursive's existing ligatures.
+
+macOS only: a single (3,1,0x409) name record is enough; we skip the Windows
+(1,0) record.
 
 Lilex is SIL OFL 1.1 (see font-data/Lilex-OFL.txt).
 """
@@ -22,9 +29,14 @@ import math
 from fontTools.ttLib import TTFont
 from fontTools.varLib import instancer
 from fontTools.ttLib.tables import otTables as ot
+from fontTools.otlLib import builder as otl
 
 from borrow_glyphs import _measure_stroke, _match_source_weight
 from join_dashes import _sheared, _add_glyph, _single_sub_lookup
+
+# Characters that, following a backslash, mean it is acting as an escape.
+# C/JS escapes + regex classes + hex/unicode + octal/backrefs + backslash + quotes.
+DEFAULT_ESCAPE_CHARS = "abefnrtv" "dDwWsSB" "xuUN" "0123456789" "\\" "\"'"
 
 
 def _free_name_id(font) -> int:
@@ -35,6 +47,72 @@ def _free_name_id(font) -> int:
     return nid
 
 
+def _single_sub_map(font) -> dict[str, list[str]]:
+    """Collect every single-substitution (incl. extension) mapping in GSUB."""
+    out: dict[str, list[str]] = {}
+    gsub = font.get("GSUB")
+    if not gsub:
+        return out
+    for lk in gsub.table.LookupList.Lookup:
+        for st in lk.SubTable:
+            sub, t = st, lk.LookupType
+            if t == 7:  # extension
+                sub, t = st.ExtSubTable, st.ExtSubTable.LookupType
+            if t == 1 and getattr(sub, "mapping", None):
+                for k, v in sub.mapping.items():
+                    out.setdefault(k, []).append(v)
+    return out
+
+
+def _resolve_glyphs(font, char: str) -> set[str]:
+    """All glyph names `char` may appear as (base + any single-sub it becomes)."""
+    cmap = font.getBestCmap()
+    base = cmap.get(ord(char))
+    if not base:
+        return set()
+    single = _single_sub_map(font)
+    seen, stack = set(), [base]
+    while stack:
+        g = stack.pop()
+        if g in seen:
+            continue
+        seen.add(g)
+        stack.extend(single.get(g, []))
+    return seen
+
+
+def _ignore_subtable(backtrack, input_, glyph_map):
+    """ChainContextSubst that matches a context but applies nothing (an 'ignore')."""
+    st = ot.ChainContextSubst()
+    st.Format = 3
+    st.BacktrackGlyphCount = len(backtrack)
+    st.BacktrackCoverage = [otl.buildCoverage(set(g), glyph_map) for g in reversed(backtrack)]
+    st.InputGlyphCount = len(input_)
+    st.InputCoverage = [otl.buildCoverage(set(g), glyph_map) for g in input_]
+    st.LookAheadGlyphCount = 0
+    st.LookAheadCoverage = []
+    st.SubstLookupRecord = []
+    st.SubstCount = 0
+    return st
+
+
+def _sub_subtable(input_, lookahead, lookup_index, glyph_map):
+    st = ot.ChainContextSubst()
+    st.Format = 3
+    st.BacktrackGlyphCount = 0
+    st.BacktrackCoverage = []
+    st.InputGlyphCount = len(input_)
+    st.InputCoverage = [otl.buildCoverage(set(g), glyph_map) for g in input_]
+    st.LookAheadGlyphCount = len(lookahead)
+    st.LookAheadCoverage = [otl.buildCoverage(set(g), glyph_map) for g in lookahead]
+    rec = ot.SubstLookupRecord()
+    rec.SequenceIndex = 0
+    rec.LookupListIndex = lookup_index
+    st.SubstLookupRecord = [rec]
+    st.SubstCount = 1
+    return st
+
+
 def add_stylistic_set(
     target_font: TTFont,
     *,
@@ -43,15 +121,18 @@ def add_stylistic_set(
     ui_name: str,
     glyph_map: dict,
     slant: float = 0.0,
+    escape_only: bool = False,
+    escape_chars: str = DEFAULT_ESCAPE_CHARS,
 ) -> dict:
     """Import glyphs and expose them as an optional stylistic set `feature_tag`.
 
-    glyph_map maps target glyph -> source glyph; a backslash-thin style maps
-    {"backslash": "backslash.ss03"}. The imported alternates get a ".thin"-style
-    suffix derived from the feature tag to avoid name clashes.
+    glyph_map maps target glyph -> source glyph (e.g. {"backslash": "backslash.ss03"}).
+    Imported alternates get a `.<feature_tag>` suffix.
+
+    escape_only (backslash): substitute only when the backslash is followed by an
+    escape character, is not preceded by `:` (drive path), and is not the 2nd of
+    a consecutive pair.
     """
-    # Weight-match via the hyphen so the imported alternate scales with the
-    # instance but keeps the source's (intentionally thin) proportions.
     target_stroke = _measure_stroke(
         target_font["glyf"]["hyphen"], target_font.getGlyphSet(), "vertical", slant
     )
@@ -69,7 +150,6 @@ def add_stylistic_set(
     sgs = source_font.getGlyphSet()
     shear = math.tan(math.radians(-slant))
 
-    # Import alternates and build the base->alternate name mapping.
     mapping = {}
     for base, src in glyph_map.items():
         alt = f"{base}.{feature_tag}"
@@ -79,14 +159,46 @@ def add_stylistic_set(
 
     gsub = target_font["GSUB"].table
     LL = gsub.LookupList.Lookup
-    lookup_index = len(LL)
-    LL.append(_single_sub_lookup(mapping))
+    glyph_map_ids = target_font.getReverseGlyphMap(rebuild=True)
+
+    if escape_only:
+        # Inner single-sub (invoked contextually) + an ordered chain lookup.
+        inner = len(LL)
+        LL.append(_single_sub_lookup(mapping))
+
+        base_glyph = next(iter(mapping))  # "backslash"
+        alt_glyph = mapping[base_glyph]
+        colon = target_font.getBestCmap().get(ord(":"))
+        escape_cov = set()
+        for ch in escape_chars:
+            escape_cov |= _resolve_glyphs(target_font, ch)
+        escape_cov.add(base_glyph)  # so `\\` (followed by a backslash) matches
+
+        chain = ot.Lookup()
+        chain.LookupType = 6
+        chain.LookupFlag = 0
+        subtables = []
+        if colon:
+            # don't thin a drive-path backslash ( :\ )
+            subtables.append(_ignore_subtable([[colon]], [[base_glyph]], glyph_map_ids))
+        # don't thin the 2nd of a consecutive pair (it's the escaped literal)
+        subtables.append(_ignore_subtable([[alt_glyph]], [[base_glyph]], glyph_map_ids))
+        # thin when followed by an escape character
+        subtables.append(_sub_subtable([[base_glyph]], [sorted(escape_cov)], inner, glyph_map_ids))
+        chain.SubTable = subtables
+        chain.SubTableCount = len(subtables)
+
+        lookup_index = len(LL)
+        LL.append(chain)
+    else:
+        lookup_index = len(LL)
+        LL.append(_single_sub_lookup(mapping))
+
     gsub.LookupList.LookupCount = len(LL)
 
-    # Build the stylistic-set feature with a UI name.
+    # Stylistic-set feature with a macOS UI name.
     name_id = _free_name_id(target_font)
     target_font["name"].setName(ui_name, name_id, 3, 1, 0x409)
-    target_font["name"].setName(ui_name, name_id, 1, 0, 0)
 
     params = ot.FeatureParamsStylisticSet()
     params.Version = 0
@@ -104,7 +216,6 @@ def add_stylistic_set(
     gsub.FeatureList.FeatureRecord.append(rec)
     gsub.FeatureList.FeatureCount = len(gsub.FeatureList.FeatureRecord)
 
-    # Wire the feature into every language system so applications can select it.
     for script_rec in gsub.ScriptList.ScriptRecord:
         script = script_rec.Script
         lang_systems = []
