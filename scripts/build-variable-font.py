@@ -46,6 +46,7 @@ from vf_lilex import (  # noqa: E402
     add_feature,
     append_lookup,
     feature_lookup_indices,
+    free_name_id,
     graft_variable_alternate,
     repair_hvar,
     single_sub_lookup,
@@ -451,6 +452,52 @@ def add_arrow_chars(font: TTFont, recursive_path: str) -> list[int]:
 # ----------------------------------------------------------------------------
 
 
+# ----------------------------------------------------------------------------
+# Named instances at the Mono Semicasual (MONO=1, CASL=0.5) use points, so macOS
+# CoreText renders CASL=0.5 (which it would otherwise snap to the nearest named
+# instance — only CASL 0/1 exist in Recursive's inherited set).
+
+# (subfamily name, wght, slnt, CRSV); MONO=1, CASL=0.5 for all.
+SEMICASUAL_INSTANCES = [
+    ("Light", 300, 0, 0.5),
+    ("Regular", 375, 0, 0.5),          # == the fvar default
+    ("Medium", 500, 0, 0.5),
+    ("Bold", 700, 0, 0.5),
+    ("Black", 900, 0, 0.5),
+    ("Light Italic", 300, -15, 0.5),
+    ("Italic", 375, -15, 0.5),
+    ("Medium Italic", 500, -15, 0.5),
+    ("Bold Italic", 700, -15, 0.5),
+    ("Black Italic", 900, -15, 0.5),
+]
+
+
+def add_semicasual_instances(font: TTFont) -> None:
+    from fontTools.ttLib.tables._f_v_a_r import NamedInstance
+    name = font["name"]
+    added = 0
+    for subfamily, wght, slnt, crsv in SEMICASUAL_INSTANCES:
+        coords = {"MONO": 1.0, "CASL": 0.5, "wght": float(wght),
+                  "slnt": float(slnt), "CRSV": float(crsv)}
+        # skip if an instance already sits at these exact coordinates
+        if any(i.coordinates == coords for i in font["fvar"].instances):
+            continue
+        nid = free_name_id(font)
+        name.setName(subfamily, nid, 3, 1, 0x409)
+        inst = NamedInstance()
+        inst.coordinates = coords
+        inst.subfamilyNameID = nid
+        inst.postscriptNameID = 0xFFFF  # no per-instance PostScript name
+        inst.flags = 0
+        font["fvar"].instances.append(inst)
+        added += 1
+    print(f"  • added {added} Mono Semicasual (CASL=0.5) named instances "
+          f"(incl. the default) for macOS CoreText")
+
+
+# ----------------------------------------------------------------------------
+
+
 def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
     print(f"Loading {src_path}")
     font = TTFont(src_path)
@@ -517,6 +564,14 @@ def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
         font.getReverseGlyphMap(rebuild=True)
         print("Re-based default -> Mono Casual Regular (MONO=1, CASL=0.5, wght=375); "
               "all axes kept")
+
+    # ---- named instances at the Mono Semicasual (CASL=0.5) use points ---------
+    # Recursive's inherited named instances only sit at CASL 0/1 and MONO 0/1, so
+    # macOS CoreText (which snaps a VF's coordinates to the NEAREST named instance)
+    # snaps our CASL=0.5 default — and any font-variation=CASL=0.5 — to Casual.
+    # Add exact named instances at MONO=1, CASL=0.5 (incl. the default) so those
+    # render correctly. Additive: the CASL 0/1 instances stay, so those keep working.
+    add_semicasual_instances(font)
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     font.save(out_path)

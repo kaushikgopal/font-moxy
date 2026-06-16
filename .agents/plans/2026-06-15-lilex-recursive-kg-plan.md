@@ -316,6 +316,19 @@ dropped; keep (3,1,0x409).
   `fonts/RecursiveKG-VF/RecursiveKG[…].ttf`. Coexistence note: static (8 instances)
   + VF now share family "Recursive KG"; if both are installed an app may merge/pick
   — use one or the other (the VF covers all weights via the axes).
+- 2026-06-15 - human/executor: Ghostty `font-variation = CASL=0.5` "not respected"
+  (0/1 work) and the 0.5 default "looks like CASL=1". CONFIRMED font-side is FINE:
+  HarfBuzz renders CASL 0/0.25/0.5/0.75/1 as a clean linear progression; avar is
+  identity; outline drift is exactly proportional. ROOT CAUSE: macOS CoreText snaps
+  a VF's coordinates to the NEAREST NAMED INSTANCE, and Recursive's inherited fvar
+  instances only sit at CASL∈{0,1} (and MONO∈{0,1}) — so 0.5 (and the 0.5 default)
+  snap to Casual. FIX (build step add_semicasual_instances): add 10 Mono Semicasual
+  named instances at MONO=1, CASL=0.5 (Light/Regular/Medium/Bold/Black + italics),
+  INCLUDING one at the exact default, additively (CASL 0/1 instances kept, so those
+  keep working). Now 74 instances; default has an exact match. NOTE: couldn't test
+  in Ghostty from here — this is the standard CoreText remedy; intermediate CASL
+  (0.3/0.7) will still snap to the nearest of {0,0.5,1}. VERIFIED font compiles,
+  default still == OG@(MONO1,CASL.5,wght375) within 1u.
 - 2026-06-15 - executor: Recursive VF has NO `calt`; code ligatures live in `dlig`
   (e.g. L180 bar+greater→bar_greater.code) + one `liga` lookup. dlig ligates only
   `--`,`---` and the bounded arrows; runs of 4+ hyphens stay loose. So lilx's
