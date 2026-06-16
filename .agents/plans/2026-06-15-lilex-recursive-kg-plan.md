@@ -301,6 +301,19 @@ dropped; keep (3,1,0x409).
   gated). Honours the explicit "gated, not default" instruction; flipping to
   always-on/additive is a one-line change (cmap straight to the arrow, drop the
   placeholder+sub).
+- 2026-06-15 - executor: DEFAULT long-arrow fix built (scripts/vf_long_arrows.py).
+  Three variable building blocks at Recursive's NATIVE arrow shaft band (arrow.shaft,
+  arrow.rcap from ->, arrow.lcap from <-; wght 300→1000 + slnt, MONO frozen — the
+  arrow shaft band is MONO-invariant). Added to `dlig` (not lilx, not calt — calt
+  doesn't exist; dlig is where Recursive's arrows live and the toggle the user
+  already needs). Two-pass chain on the post-dlig stream: pass1 converts bare
+  right-shaft dashes → arrow.shaft (bounded lookahead to `>`, up to MAX_RUN=14;
+  hyphen_hyphen_hyphen.code via multiple-sub) and caps the leading `<`; pass2 caps
+  `>` and propagates the left shaft rightward (infinite). Right arrows bounded
+  (HarfBuzz can't propagate right→left); left unbounded. VERIFIED: ->/--><- native,
+  ---> <-- <-->… clean both dirs + double-ended, weight/slant interpolate, and
+  NON-arrows stay pristine (`---`,`----`,`a-b`,`i<5` untouched; default has no
+  arrows without dlig; dlig non-arrow output identical to OG).
 
 ## Execution Protocol
 

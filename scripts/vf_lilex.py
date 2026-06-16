@@ -253,6 +253,52 @@ def graft_variable_alternate(
     return {"alt": alt_name, "npts": npts, "tuples": len(variations)}
 
 
+def add_variable_glyph(
+    font: TTFont,
+    name: str,
+    *,
+    light_glyph,
+    light_coords: Sequence[tuple],
+    heavy_coords: Sequence[tuple],
+    advance: int = CELL,
+    add_slnt: bool = True,
+) -> None:
+    """Register `name` from a pre-built light TTGlyph + light/heavy point coords.
+
+    For hand-welded glyphs (the long-arrow caps/shaft) whose outline is built at
+    Recursive's light (wght 300) and heavy (1000) masters: the default geometry is
+    the light glyph, a wght TupleVariation morphs it to heavy, and an optional slnt
+    shear leans it. Advance is fixed (new glyphs are out of HVAR). Point structures
+    must match between light and heavy.
+    """
+    if len(light_coords) != len(heavy_coords):
+        raise ValueError(
+            f"{name}: light/heavy point count mismatch "
+            f"({len(light_coords)} vs {len(heavy_coords)})"
+        )
+    light_glyph.recalcBounds(font["glyf"])
+    font["glyf"][name] = light_glyph
+    font["hmtx"].metrics[name] = (
+        advance, light_glyph.xMin if light_glyph.numberOfContours > 0 else 0
+    )
+    if name not in font.getGlyphOrder():
+        font.setGlyphOrder(list(font.getGlyphOrder()) + [name])
+
+    npts = len(light_coords)
+    wght_deltas = [
+        (round(heavy_coords[i][0] - light_coords[i][0]),
+         round(heavy_coords[i][1] - light_coords[i][1]))
+        for i in range(npts)
+    ] + [(0, 0)] * 4
+    variations = [TupleVariation({"wght": (0.0, 1.0, 1.0)}, wght_deltas)]
+    if add_slnt:
+        slnt_deltas = [
+            (round(SLNT_SHEAR * light_coords[i][1]), 0) for i in range(npts)
+        ] + [(0, 0)] * 4
+        variations.append(TupleVariation({"slnt": (-1.0, -1.0, 0.0)}, slnt_deltas))
+    font["gvar"].variations[name] = variations
+
+
 # ----------------------------------------------------------------------------
 # GSUB plumbing (hand-built, append-only).
 

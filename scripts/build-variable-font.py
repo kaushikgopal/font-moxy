@@ -485,6 +485,12 @@ def build(src_path: str, out_path: str) -> None:
     add_feature(font, feature_tag="lilx", lookup_indices=lilx_lookups)
     print(f"  • lilx -> lookups {lilx_lookups}")
 
+    # ---- default fix: Recursive-style long arrows (extends dlig) --------------
+    print("Adding default long-arrow fix (--->, <--, <-->, …) to dlig")
+    from vf_long_arrows import long_arrows
+    la = long_arrows(font, src_path)
+    print(f"  • long arrows -> dlig lookups {la}")
+
     # rebuild glyph-name cache before any compile/cmap touches new glyphs
     font.getReverseGlyphMap(rebuild=True)
 
