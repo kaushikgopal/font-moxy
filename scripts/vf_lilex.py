@@ -120,20 +120,23 @@ def wght_anchors(
 # Geometry: decompose Lilex source glyph(s) to a simple contour outline.
 
 
-def _decompose_parts(font: TTFont, parts: Sequence[str], shear: float, dy: float = 0.0):
+def _decompose_parts(font: TTFont, parts: Sequence[str], shear: float,
+                     dx: float = 0.0, dy: float = 0.0):
     """Draw `parts` (tiled left-to-right across cells) into one simple TTGlyph.
 
     Composites are decomposed to contours so the result references no component
-    glyphs. Returns (glyph, raw_coords, bounds). `raw_coords` is the flat list of
-    point coordinates (no phantom points) used for gvar delta maths.
+    glyphs. A common (dx, dy) translation is applied to every part — passing the
+    same offset to every master keeps gvar deltas (differences) unchanged.
+    Returns (glyph, raw_coords, bounds). `raw_coords` is the flat list of point
+    coordinates (no phantom points) used for gvar delta maths.
     """
     gs = font.getGlyphSet()
     n = len(parts)
     pen = TTGlyphPen(gs)
     bpen = BoundsPen(gs)
     for i, part in enumerate(parts):
-        dx = (i - (n - 1)) * CELL
-        aff = (1.0, 0.0, shear, 1.0, dx, dy)
+        cell_dx = (i - (n - 1)) * CELL + dx
+        aff = (1.0, 0.0, shear, 1.0, cell_dx, dy)
         rec = DecomposingRecordingPen(gs)
         font["glyf"][part].draw(rec, gs)
         rec.replay(TransformPen(pen, aff))
@@ -141,6 +144,13 @@ def _decompose_parts(font: TTFont, parts: Sequence[str], shear: float, dy: float
     glyph = pen.glyph()
     coords = [tuple(p) for p in glyph.coordinates] if glyph.numberOfContours > 0 else []
     return glyph, coords, bpen.bounds
+
+
+def source_bounds(source_path: str, wght: int, glyphs: Sequence[str]):
+    """Combined bounds of `glyphs` (tiled across cells) at a Lilex wght."""
+    font = lilex_instance(source_path, wght)
+    _, _, bounds = _decompose_parts(font, glyphs, 0.0)
+    return bounds
 
 
 # ----------------------------------------------------------------------------
@@ -156,6 +166,7 @@ def graft_variable_alternate(
     light_wght: int,
     heavy_wght: int,
     advance: int = CELL,
+    dx: float = 0.0,
     dy: float = 0.0,
     add_slnt: bool = True,
     mono_wght: int | None = None,
@@ -170,13 +181,14 @@ def graft_variable_alternate(
 
     If `mono_wght` is given, a MONO TupleVariation (and the wght×MONO corner from
     `monoheavy_wght`) thickens the glyph as MONO 0→1, matching Recursive's own
-    heavier mono strokes. Pass advance/dy to align multi-cell outlines.
+    heavier mono strokes. Pass advance and (dx, dy) to size/align multi-cell
+    outlines onto Recursive's ligature cell.
     """
     light = lilex_instance(source_path, light_wght)
     heavy = lilex_instance(source_path, heavy_wght)
 
-    lg, lcoords, _ = _decompose_parts(light, source_glyphs, 0.0, dy)
-    hg, hcoords, _ = _decompose_parts(heavy, source_glyphs, 0.0, dy)
+    lg, lcoords, _ = _decompose_parts(light, source_glyphs, 0.0, dx, dy)
+    hg, hcoords, _ = _decompose_parts(heavy, source_glyphs, 0.0, dx, dy)
     if len(lcoords) != len(hcoords):
         raise ValueError(
             f"{alt_name}: light/heavy point count mismatch "
@@ -206,7 +218,7 @@ def graft_variable_alternate(
     # MONO (optional): light -> mono master at MONO +1
     if mono_wght is not None:
         mono = lilex_instance(source_path, mono_wght)
-        _, mcoords, _ = _decompose_parts(mono, source_glyphs, 0.0, dy)
+        _, mcoords, _ = _decompose_parts(mono, source_glyphs, 0.0, dx, dy)
         mono_deltas = [
             (round(mcoords[i][0] - lcoords[i][0]), round(mcoords[i][1] - lcoords[i][1]))
             for i in range(npts)
@@ -216,7 +228,7 @@ def graft_variable_alternate(
         # wght x MONO corner so the (wght=1, MONO=1) corner lands on its own master
         if monoheavy_wght is not None:
             mh = lilex_instance(source_path, monoheavy_wght)
-            _, mhcoords, _ = _decompose_parts(mh, source_glyphs, 0.0, dy)
+            _, mhcoords, _ = _decompose_parts(mh, source_glyphs, 0.0, dx, dy)
             corner = [
                 (
                     round(mhcoords[i][0] - hcoords[i][0] - mcoords[i][0] + lcoords[i][0]),

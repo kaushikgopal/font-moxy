@@ -46,6 +46,7 @@ from vf_lilex import (  # noqa: E402
     feature_lookup_indices,
     graft_variable_alternate,
     single_sub_lookup,
+    source_bounds,
     wght_anchors,
 )
 
@@ -135,6 +136,60 @@ def add_curvy_parens(font: TTFont, recursive_path: str) -> list[int]:
 
 
 # ----------------------------------------------------------------------------
+# lilx tweak: connected bars |> and <| (Lilex cv11).
+
+
+def add_connected_bars(font: TTFont, recursive_path: str) -> list[int]:
+    """Graft connected |> and <| (Lilex cv11) as variable 2-cell alternates.
+
+    Recursive's dlig ligates bar+greater -> bar_greater.code (a forward 2-cell
+    glyph, adv 1200) and less+bar -> less_bar.code. lilx substitutes those for
+    connected versions built from Lilex's bar_greater.liga.cv11 /
+    less_bar.liga.cv11, repositioned onto Recursive's 1200-unit ligature cell.
+    (Requires dlig on — the toggle any Recursive code ligature needs; Recursive
+    ships no calt.)
+    """
+    light, heavy = wght_anchors(
+        recursive_path,
+        target_glyph="bar",
+        source_path=LILEX_VF,
+        probe_source="bar",
+        axis="horizontal",
+    )
+    rec = TTFont(recursive_path)
+    rg = rec["glyf"]
+    mapping = {}
+    specs = [
+        ("bar_greater.code", "bar_greater.liga.cv11"),
+        ("less_bar.code", "less_bar.liga.cv11"),
+    ]
+    for target, src in specs:
+        tg = rg[target]
+        tg.recalcBounds(rg)
+        adv = rec["hmtx"].metrics[target][0]
+        sb = source_bounds(LILEX_VF, light, [src])
+        dx = tg.xMin - sb[0]                                    # align left ink edge
+        dy = (tg.yMin + tg.yMax) / 2.0 - (sb[1] + sb[3]) / 2.0  # vertical centre
+        alt = f"{target}.lilx"
+        graft_variable_alternate(
+            font,
+            source_path=LILEX_VF,
+            alt_name=alt,
+            source_glyphs=[src],
+            light_wght=light,
+            heavy_wght=heavy,
+            advance=adv,
+            dx=dx,
+            dy=dy,
+        )
+        mapping[target] = alt
+    font.getReverseGlyphMap(rebuild=True)
+    idx = append_lookup(font, single_sub_lookup(mapping))
+    print(f"  • connected bars (cv11): Lilex wght {light}->{heavy}, lookup {idx}")
+    return [idx]
+
+
+# ----------------------------------------------------------------------------
 
 
 def build(src_path: str, out_path: str) -> None:
@@ -155,6 +210,7 @@ def build(src_path: str, out_path: str) -> None:
     print("Building lilx feature (opt-in Lilex tweaks)")
     lilx_lookups: list[int] = []
     lilx_lookups += add_curvy_parens(font, src_path)
+    lilx_lookups += add_connected_bars(font, src_path)
 
     add_feature(font, feature_tag="lilx", lookup_indices=lilx_lookups)
     print(f"  • lilx -> lookups {lilx_lookups}")
