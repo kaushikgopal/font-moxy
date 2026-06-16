@@ -26,15 +26,9 @@ plain Recursive back, it's one or two font-features away (variable font only —
 brew install --cask kaushikgopal/tools/font-moxy
 ```
 
-> Upgrading from the old `font-recursive-kg` cask? Run
-> `brew uninstall --cask font-recursive-kg` first, then install `font-moxy`.
-
 **Manual:** download the latest `moxy-<version>.zip` from
 [Releases](https://github.com/kaushikgopal/font-moxy/releases/latest), unzip, and
 install the `.ttf` files (macOS: open them in Font Book).
-
-The cask ships eight static styles — Regular, Italic, Semibold, Semibold Italic,
-Bold, Bold Italic, Black, Black Italic.
 
 ### Use it
 
@@ -43,6 +37,10 @@ Set the family name to **`Moxy`** in your editor / terminal. In
 
 ```ini
 font-family = Moxy
+# below are my preferences
+adjust-cell-height      = 10
+font-size               = 13
+font-variation          = wght=375
 ```
 
 Most editors enable contextual ligatures (`calt`) by default, which is what Moxy
@@ -60,12 +58,12 @@ Compared to stock Recursive Mono Casual, Moxy changes these by default:
 | | Recursive | Moxy (default) |
 |---|---|---|
 | Parentheses `( )` | upright | curvier (Lilex cv13) |
-| `---` / `----…` | separate dashes | one connected line |
+| `---` / `----…` | separate dashes | ligature setting makes it a contiguous line |
 | `\|>` `<\|` | bar + arrow | connected (Lilex cv11) |
-| Escape `\` in `\n` `\t` … | normal weight | thinner (escape-only) |
-| Long arrows `--->` `<---` `<-->` | break apart | connect at any length |
-| `f r L Z 0 1` | Recursive default | simplified f/r, serifless L/Z, dotted 0, simplified 1 |
-| Extra arrows (↩ ↪ ↰ ⇄ …) | absent | 12 added |
+| Escape `\` in `\n` `\t` … | normal weight | thinner bar for escape chars only (logic differs from Lilex) |
+| Long arrows `--->` `<---` `<-->` | ligature setting broken and shows disjoint | truly contiguous and shows as connected |
+| `f r L Z 0 1` |  | simplified f/r, serifless L/Z, dotted 0, simplified 1 |
+| Extra arrows (↩ ↪ ↰ ⇄ …) | absent from font | 12 added (courtesy Lilex) |
 
 The **variable font** (see [CUSTOMIZING.md](CUSTOMIZING.md)) additionally lets you
 dial these back toward Recursive with opt-in features:
@@ -101,18 +99,26 @@ variable font, tweak which features are baked in, or cut a release.
 
 ## Attribution & license
 
-Moxy stands on the shoulders of two open-source typefaces — please keep their
-notices when redistributing:
+**Moxy the font is licensed under the [SIL Open Font License 1.1](OFL.txt)**, with
+**"Moxy" as a Reserved Font Name.** That's a deliberate choice, not an accident:
+
+- It **requires attribution** — anyone who redistributes Moxy (modified or not)
+  must keep the copyright + license notices.
+- The **Reserved Font Name means you may not ship a modified version still called
+  "Moxy"** — fork it all you like, but rename your fork.
+
+Moxy has to be OFL-1.1 because it's a derivative of two OFL-1.1 typefaces, whose
+notices must be kept:
 
 - **[Recursive](https://github.com/arrowtype/recursive)** by Arrow Type / Stephen
-  Nixon — the base design and variable font (SIL Open Font License 1.1).
+  Nixon — the base design and variable font (SIL OFL 1.1).
 - **[Lilex](https://github.com/mishamyrt/Lilex)** by Mikhael Khrustik — the
-  borrowed code glyphs (SIL Open Font License 1.1). The OFL text ships in the
-  release as `Lilex-OFL.txt`.
+  borrowed code glyphs (SIL OFL 1.1).
 
-Neither Recursive nor Lilex carries a Reserved Font Name, so the "Moxy" naming is
-OFL-compliant. The build tooling in this repository is MIT licensed (see
-[`LICENSE`](LICENSE)).
+The full text and all three copyright lines are in [`OFL.txt`](OFL.txt) (also
+bundled in each release, alongside `Lilex-OFL.txt`). Separately, the **build
+tooling/scripts** in this repo are MIT licensed (see [`LICENSE`](LICENSE),
+inherited from Arrow Type's `recursive-code-config`).
 
 Issues with the build workflow → file them here. Issues with the underlying
 shapes → upstream at [Recursive](https://github.com/arrowtype/recursive/issues)

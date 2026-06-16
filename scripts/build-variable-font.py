@@ -64,6 +64,20 @@ FAMILY = "Moxy"
 PS_NAME = "Moxy-VF"
 DEFAULT_OUT = "fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf"
 
+# OFL-1.1 license metadata baked into the name table (id 0/13/14), so the license
+# travels with the binary. Moxy derives from Recursive + Lilex (both OFL-1.1), so
+# the font itself must stay OFL-1.1; "Moxy" is a Reserved Font Name. See OFL.txt.
+COPYRIGHT = (
+    'Copyright 2026 Kaushik Gopal (https://github.com/kaushikgopal/font-moxy), '
+    'with Reserved Font Name "Moxy". Portions copyright 2019 The Recursive Project '
+    'Authors; portions copyright 2019 The Lilex Project Authors.'
+)
+LICENSE_DESC = (
+    "This Font Software is licensed under the SIL Open Font License, Version 1.1. "
+    "This license is available with a FAQ at https://openfontlicense.org"
+)
+LICENSE_URL = "https://openfontlicense.org"
+
 # Recursive's own stylistic sets the user prefers, bundled under "Kaush's prefs":
 #   ss03 Simplified f, ss06 Simplified r, ss08 serifless L&Z, ss10 dotted 0,
 #   ss11 simplified 1.
@@ -87,6 +101,9 @@ def rename_family(font: TTFont) -> None:
     setname(6, PS_NAME)              # PostScript name (distinct from static build)
     setname(16, FAMILY)              # Typographic Family
     setname(17, "Regular")           # Typographic Subfamily
+    setname(0, COPYRIGHT)            # Copyright (+ Reserved Font Name "Moxy")
+    setname(13, LICENSE_DESC)        # License description (OFL-1.1)
+    setname(14, LICENSE_URL)         # License URL
 
 
 # ----------------------------------------------------------------------------

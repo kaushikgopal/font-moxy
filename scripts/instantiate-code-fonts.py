@@ -80,6 +80,20 @@ def setFontNameID(font, ID, newName):
 # "Moxy" -> family "Moxy", folder "fonts/Moxy-Static", files "Moxy-<Style>-<ver>.ttf".
 oldName = "Recursive"
 
+# OFL-1.1 license metadata baked into the name table (id 0/13/14). Moxy derives
+# from Recursive + Lilex (both OFL-1.1), so the font stays OFL-1.1; "Moxy" is a
+# Reserved Font Name. See OFL.txt.
+COPYRIGHT = (
+    'Copyright 2026 Kaushik Gopal (https://github.com/kaushikgopal/font-moxy), '
+    'with Reserved Font Name "Moxy". Portions copyright 2019 The Recursive Project '
+    'Authors; portions copyright 2019 The Lilex Project Authors.'
+)
+LICENSE_DESC = (
+    "This Font Software is licensed under the SIL Open Font License, Version 1.1. "
+    "This license is available with a FAQ at https://openfontlicense.org"
+)
+LICENSE_URL = "https://openfontlicense.org"
+
 def splitFont(
         outputDirectory=f"{fontOptions['Family Name']}-Static".replace(" ",""),
 ):
@@ -144,6 +158,11 @@ def splitFont(
         newFamName = (newFullName.replace(f" {instance}", ""))
         setFontNameID(instanceFont, 1, newFamName)
         setFontNameID(instanceFont, 16, newFamName)
+
+        # License metadata: OFL-1.1 + Reserved Font Name "Moxy" (see OFL.txt)
+        setFontNameID(instanceFont, 0, COPYRIGHT)
+        setFontNameID(instanceFont, 13, LICENSE_DESC)
+        setFontNameID(instanceFont, 14, LICENSE_URL)
 
         newFileName = fontFileName\
             .replace(oldName, fontOptions['Family Name'].replace(" ", ""))\

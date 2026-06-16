@@ -198,5 +198,19 @@
   <code>/Users/kg/dev/oss/font-moxy</code>.
 </div>
 
+<div class="entry"><span class="tag t-decision">resolved</span><time>2026-06-16 · licensing</time>
+  <strong>Moxy font = SIL OFL 1.1 with Reserved Font Name "Moxy".</strong> A custom/more
+  restrictive license isn't possible: the font derives from Recursive + Lilex (both OFL-1.1),
+  and OFL requires derivatives to stay OFL — so use/forking can't be prohibited. What the OFL
+  <em>does</em> give: mandatory attribution (keep the notices) + the RFN, which stops anyone
+  shipping a modified font still named "Moxy". Implemented: added <code>OFL.txt</code> (RFN +
+  Recursive + Lilex copyright lines + full OFL body); embedded the license in both builds'
+  name table (id 0 copyright+RFN, id 13 OFL notice, id 14 URL); bundled <code>OFL.txt</code>
+  in the release zip; README attribution section rewritten. The build tooling stays MIT
+  (<code>LICENSE</code>). Re-cut <strong>v1</strong> in place: rebuilt fonts, new
+  <code>moxy-1.zip</code> (sha <code>97045da1…</code>), clobbered the release assets, bumped
+  the cask sha + pushed; verified published zip sha == cask sha.
+</div>
+
 </body>
 </html>

@@ -43,7 +43,7 @@ package: build ## Package the static fonts + create GitHub release for homebrew
 	echo "📦 Starting package process..." && \
 	echo "📋 Version: $$VERSION, Font Version: $$FONT_VERSION" && \
 	echo "📄 Bundling attribution (Lilex OFL + LICENSE)..." && \
-	cp font-data/Lilex-OFL.txt LICENSE fonts/Moxy-Static/ 2>/dev/null || true && \
+	cp OFL.txt font-data/Lilex-OFL.txt LICENSE fonts/Moxy-Static/ 2>/dev/null || true && \
 	echo "🗜️  Creating zip file..." && \
 	cd fonts && zip -r -X ../moxy-$$VERSION.zip Moxy-Static/ && cd .. && \
 	echo "🔐 Calculating SHA256..." && \

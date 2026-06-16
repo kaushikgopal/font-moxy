@@ -42,7 +42,7 @@ User says something like:
 
 ### 5. Create release zip
 
-- Bundle attribution: `cp font-data/Lilex-OFL.txt LICENSE fonts/Moxy-Static/`
+- Bundle attribution: `cp OFL.txt font-data/Lilex-OFL.txt LICENSE fonts/Moxy-Static/`
 - `cd fonts && zip -r -X /tmp/moxy-<version>.zip Moxy-Static && cd ..`
 - Calculate SHA256: `shasum -a 256 /tmp/moxy-<version>.zip`
 
