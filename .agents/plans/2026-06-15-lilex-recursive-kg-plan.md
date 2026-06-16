@@ -184,17 +184,26 @@ dropped; keep (3,1,0x409).
 - Lilex ARROW tweaks are DROPPED entirely (user prefers native Recursive arrows);
   the long-arrow fix becomes a DEFAULT (it just repairs broken arrows). Opt-in
   set = curvy parens, connected dashes, connected bars, thin backslash.
-- **"Kaush" bundle feature (user idea):** expose ONE named feature that enables
-  the whole curated Lilex set together (curvy parens + connected dashes +
-  connected bars + thin backslash + …), like `case`/`frac` are single toggles.
-  OT feature tags are EXACTLY 4 chars, so "kaush" can't be a literal tag — use a
-  STYLISTIC SET (ssNN) with a FeatureParams UI name "Kaush" (apps show the name),
-  whose Feature references ALL the curated lookups. Likely ALSO keep per-tweak
-  toggles (individual cvNN/ssNN) so the user can mix; the "Kaush" set is the
-  one-switch preset. OPEN: opt-in (default pristine, enable Kaush to get the
-  look — matches case/frac) vs baked-on-by-default. Leaning opt-in; one-time
-  ghostty `font-feature` enables it. This bundling does NOT change the hard part
-  (variable borrowed glyphs); it's just how the opt-in lookups are grouped.
+- **"Kaush" bundle feature (user idea, FINALIZED):** two opt-in bundles, default
+  font = pristine OG Recursive (all 5 axes, nothing baked, native features
+  off/available):
+  * `lilx` — custom 4-char OT feature tag (off by default; enable in ghostty
+    `font-feature = lilx`). Enables ONLY the ported-from-Lilex features:
+    curvy parens (cv13), connected dashes, connected bars (cv11), thin backslash,
+    AND the Recursive-style long arrows (they ride on the connected-dash shaft,
+    so they belong with `lilx`, not default). Maybe also the 12 added arrow
+    characters (additive; could be default since they don't change OG glyphs).
+  * a FREE stylistic set named "Kaush's preferences" (ss20 is OCCUPIED in
+    Recursive — use a free slot, e.g. ss13) whose Feature references Recursive's
+    OWN ssXX that the user prefers (from config Features): ss03 Simplified f,
+    ss06 Simplified r, ss08 serifless L/Z, ss10 dotted 0, ss11 simplified 1.
+    One toggle applies all five. UI name "Kaush's preferences".
+  NOTE: thin backslash moves OFF tag ss03 (Recursive's real ss03 = Simplified f
+  lives under "Kaush's preferences") and into `lilx`. Tag length: feature tags
+  are exactly 4 chars — `lilx` ok; "kaush" would not be (use the named ssNN).
+  Bundling is just lookup grouping; it does NOT change the hard variable-glyph
+  work. App support: ghostty `font-feature` applies any tag; both bundles off by
+  default so the bare font = OG Recursive.
 - Spike plan: (i) confirm opt-in stylistic set toggles in ghostty (RESOLVED — it
   works, just needs explicit enable), (ii) graft one variable Lilex glyph (a
   paren) into the partial VF with correct gvar interpolation, render at several
@@ -226,6 +235,11 @@ dropped; keep (3,1,0x409).
 - 2026-06-15 - human: idea — a single named "Kaush" feature in the VF that turns
   on the whole curated Lilex set at once (like case/frac). Captured in Approach;
   open question opt-in vs on-by-default.
+- 2026-06-15 - human: VF design FINALIZED — default = pristine OG Recursive; two
+  opt-in bundles: `lilx` (custom 4-char tag) = ported Lilex features only;
+  a free named ssNN "Kaush's preferences" = Recursive's own ss03/06/08/10/11.
+  Both off by default. Impact: long arrows + thin backslash go under `lilx`;
+  thin backslash leaves tag ss03; pick a free ssNN (ss20 occupied).
 
 ## Execution Protocol
 
