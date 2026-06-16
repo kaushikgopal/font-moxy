@@ -179,6 +179,24 @@ Add Characters:
      uni21BA, uni21BB, uni21C4, uni21C6]
 
 # -----------------------------------------------------------------------------
+# Stylistic Sets
+#
+# Optional, toggleable OpenType stylistic sets (OFF by default; enable in your
+# editor/terminal, e.g. ghostty `font-feature = ss03`). Unlike the always-on
+# borrows, these only apply when the feature tag is selected.
+#
+# Thin backslash (Lilex ss03): a lighter \ for paths/regex. Tag "ss03" matches
+# Lilex and works here because Recursive's own ss03 (Simplified f) is baked on
+# via the frozen Features list below. NOTE: for the variable-font build (where
+# features stay live) this must move to a conflict-free tag.
+Stylistic Sets:
+  - feature: ss03
+    name: Thin backslash
+    source: font-data/Lilex[wght].ttf
+    glyphs:
+      backslash: backslash.ss03
+
+# -----------------------------------------------------------------------------
 # Font Features
 
 # Freeze in code ligatures? True or False
