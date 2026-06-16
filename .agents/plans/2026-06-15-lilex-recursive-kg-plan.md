@@ -253,6 +253,26 @@ dropped; keep (3,1,0x409).
   is NOT a registered stylistic set (only ss01-20); use a free registered slot —
   planner picks `ss13` (named/discoverable) unless human objects. (4) the 12
   added arrow chars go UNDER `lilx` (gated), not default.
+- 2026-06-15 - executor: VF build started. New separate source
+  `scripts/build-variable-font.py` + helper `scripts/vf_lilex.py` (static build
+  untouched). Output `fonts/RecMonoCasualKG-VF/…` (gitignored). Decisions proven
+  by inspection before coding:
+  * Recursive VF carries BOTH HVAR and gvar. NEW alternate glyphs are absent from
+    HVAR's AdvWidthMap, so they take their static hmtx advance (600) at EVERY axis
+    location — exactly the monospace behaviour we want. So: keep HVAR untouched,
+    give alternates advance 600 + zero phantom-point gvar deltas (no advance var).
+    (At MONO<1 with lilx on, alternates are 600 vs the proportional base — fine;
+    lilx is a mono-code bundle and the default with lilx OFF is pristine.)
+  * Default VF axes stay at OG (MONO0/CASL0/wght300/slnt0/CRSV0.5); nothing baked.
+    VERIFIED default-instance outlines identical to OG Recursive (0/1304 diffs).
+  * Family renamed via name IDs 1/2/3/4/6/16/17 (macOS 3,1,0x409 only). Default
+    style labelled "Regular" for RIBBI sanity (axes unchanged).
+  * ss13 "Kaush's preferences" = a FeatureRecord (FeatureParamsStylisticSet UI
+    name) referencing Recursive's EXISTING lookups [82,85,87,89,90] for
+    ss03/06/08/10/11; wired into every langsys. VERIFIED one toggle == enabling
+    all five. Lilex weight anchors for variable glyphs: light=Lilex@~300 (matches
+    Recursive default stroke exactly), heavy caps at Lilex@700 (lighter than
+    Recursive black — accepted, can't per-weight fall back in a single VF glyph).
 
 ## Execution Protocol
 
