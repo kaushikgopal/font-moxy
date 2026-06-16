@@ -327,8 +327,21 @@ dropped; keep (3,1,0x409).
   INCLUDING one at the exact default, additively (CASL 0/1 instances kept, so those
   keep working). Now 74 instances; default has an exact match. NOTE: couldn't test
   in Ghostty from here — this is the standard CoreText remedy; intermediate CASL
-  (0.3/0.7) will still snap to the nearest of {0,0.5,1}. VERIFIED font compiles,
-  default still == OG@(MONO1,CASL.5,wght375) within 1u.
+   (0.3/0.7) will still snap to the nearest of {0,0.5,1}. VERIFIED font compiles,
+   default still == OG@(MONO1,CASL.5,wght375) within 1u.
+- 2026-06-15 - human/executor: WEIGHT BUG (the font went thin). Re-basing the wght
+  default to 375 with fontTools 4.39.3 corrupted Recursive's nonlinear `avar`:
+  'I' stroke went flat at 84 from wght 375→700 (should climb 84→111→142). The
+  4.39.3 instancer mishandles moveDefault when avar is non-identity (MONO/CASL avar
+  are identity, so those re-base fine; only wght has knots). fontTools 4.63.0 fixes
+  moveDefault+avar — re-based wght then interpolates exactly like OG (50/84/95/111/
+  142/203/225). FIX: bump `fonttools==4.39.3 -> ==4.63.0` in requirements.txt and
+  rebuild (no build-script change; the wght=375 re-base was already correct code,
+  just broken by the old toolchain). VERIFIED: full wght interpolation matches OG,
+  monospace holds, CASL + lilx/ss13/dlig features intact, default == OG within 1u.
+  skia-pathops (imports as `pathops`) + ttfautohint still work under 4.63.0. The
+  user can now set any default weight cleanly (moveDefault works); 375 kept as the
+  Regular default per earlier request.
 - 2026-06-15 - executor: Recursive VF has NO `calt`; code ligatures live in `dlig`
   (e.g. L180 bar+greater→bar_greater.code) + one `liga` lookup. dlig ligates only
   `--`,`---` and the bounded arrows; runs of 4+ hyphens stay loose. So lilx's
