@@ -167,18 +167,24 @@ This stays a real opt-in stylistic set (enable in ghostty `font-feature = ss03`)
 Mac-only: in `add_stylistic_set`, the Windows name record (platformID 1) can be
 dropped; keep (3,1,0x409).
 
-### Task B — Variable font (NOT STARTED)
-- User answers: **(1) full 5-axis VF**, **(2) Lilex tweaks strictly OPT-IN**,
-  **(3) keep static build as-is; create a NEW VF source**.
+### Task B — Variable font (SPIKE DONE — technique proven; build not started)
 - Foundation proven: partial-instancing Recursive (pin MONO/CASL/CRSV, keep
   wght+slnt) yields a clean VF with gvar + all features live. For full 5-axis,
   keep all axes (essentially rename + add features).
-- HARD PART (de-risk with a spike FIRST): graft Lilex glyphs as VARIABLE
-  (interpolating gvar across wght, sheared across slnt). Lilex is variable, so
-  sample at matching weights and build deltas. Opt-in framing means DEFAULT is
-  pristine variable Recursive (correct at all weights); enabling a feature
-  (cvXX/ssXX/calt) gives the Lilex flavor (which can be light at heavy weights —
-  acceptable since opt-in).
+- HARD PART — PROVEN via spike: graft each borrowed Lilex glyph as a NEW
+  alternate (e.g. `parenleft.lilx`) that VARIES across wght; original glyph
+  untouched (pristine default); a feature subs base->alternate (opt-in). Build
+  the wght variation by sampling Lilex at light (Recursive wght min 300) and
+  heavy (max 1000 -> Lilex caps 700) — identical point structure — then:
+    glyf[alt]=deepcopy(lilex_light); recalcBounds; hmtx[alt]=(600, xMin)
+    deltas=[(round(hc.x-lc.x),round(hc.y-lc.y)) per pt] + [(0,0)]*4  # 4 phantom
+    gvar.variations[alt]=[TupleVariation({"wght":(0.0,1.0,1.0)}, deltas)]
+  (wght min==default==300 -> normalized 0..+1, peak +1.) VERIFIED: paren is curvy
+  AND thickens 300->1000 in the full 5-axis VF; braces unaffected. Spike artifacts
+  /var/folders/.../opencode/kgvf_spike.ttf + spike_{300,650,1000}.ttf.
+  slnt: add a 2nd TupleVariation (sheared delta, tan15). MONO/CASL/CRSV: freeze
+  (no deltas) unless a visual check needs them. seq/cap/letter glyphs get the same
+  treatment; advance 600 (phantom deltas 0).
 - Opt-in feature tags must NOT collide with Recursive's live ssXX/rvrn in the VF
   (unlike the static build, nothing is frozen). Pick free tags (e.g. cv01+).
 - Lilex ARROW tweaks are DROPPED entirely (user prefers native Recursive arrows);
@@ -288,7 +294,7 @@ dropped; keep (3,1,0x409).
 - [ ] Spike: graft ONE variable Lilex glyph (paren) into a partial-instanced
       Recursive VF (pin MONO/CASL/CRSV or keep all 5 axes) with correct gvar
       across wght (+ shear across slnt). Render at several weights. Confirm
-      interpolation is clean.
+      interpolation is clean. — DONE 2026-06-15, proven (see Approach + artifacts).
 - [ ] Decide opt-in feature tags (conflict-free: cv01+). Design DEFAULT=pristine.
 - [ ] New VF build script + config (or extend existing). Variable seq/paren/bar
       glyphs (gvar). Long-arrow fix as default. Lilex arrow tweaks dropped.
