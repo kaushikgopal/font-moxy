@@ -285,6 +285,22 @@ dropped; keep (3,1,0x409).
   the toggle any Recursive ligature needs) and the ≥4-hyphen chain re-cuts loose
   runs into Lilex seq pieces (min_run=4, same as the static build). The DEFAULT
   long-arrow fix therefore can't be a `calt` addition — it must extend `dlig`.
+- 2026-06-15 - executor: thin escape-only backslash in the VF reuses the static
+  build's escape-only chain (add_stylistic_set helpers): ignore `:\`, ignore 2nd
+  of a pair, thin on escape-char lookahead. Escape coverage is expanded to every
+  stem-sibling glyph (e.g. all `zero.*`) because the MONO/CASL `.sans`/`.mono`
+  forms come from FEATURE VARIATIONS that GSUB single-sub walking can't see — so
+  `\0 \1 \r` thin at every axis location, not just MONO=1. dlig escape ligatures
+  (backslash_X.code, X∈bnrtv — just backslash+letter, no special drawing) are
+  decomposed by a multiple-sub to thin-backslash + base letter.
+- 2026-06-15 - executor: 12 added arrows are GATED behind lilx via placeholders.
+  Recursive maps none of these codepoints, so cmap U+21A9.. → a static copy of
+  Recursive's own .notdef (default == OG tofu), and lilx single-subs the
+  placeholder → the real variable Lilex arrow. TRADEOFF: cmapping these codepoints
+  suppresses OS font-fallback for them when lilx is OFF (cmap can't be feature-
+  gated). Honours the explicit "gated, not default" instruction; flipping to
+  always-on/additive is a one-line change (cmap straight to the arrow, drop the
+  placeholder+sub).
 
 ## Execution Protocol
 

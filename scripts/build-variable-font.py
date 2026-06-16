@@ -33,11 +33,12 @@ distribution.
 
 from __future__ import annotations
 
+import copy
 import os
 import sys
-
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables import otTables as ot
+from fontTools.otlLib import builder as otl
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -289,6 +290,161 @@ def add_connected_dashes(font: TTFont, recursive_path: str) -> list[int]:
 
 
 # ----------------------------------------------------------------------------
+# lilx tweak: thin escape-only backslash (Lilex ss03 glyph).
+
+
+def add_thin_backslash(font: TTFont, recursive_path: str) -> list[int]:
+    """Thin the backslash, but ONLY when it acts as an escape (Lilex glyph).
+
+    Reuses the static build's escape-only contextual logic (add_stylistic_set):
+    thin when the backslash is followed by an escape character, but not a Windows
+    drive path (``:\\``) and not the 2nd of a consecutive pair (``\\\\``). Escape
+    chars are resolved through GSUB single-subs so the ss13 forms (r.simple etc.)
+    are covered too. With dlig on, Recursive ligates \\b \\n \\r \\t \\v into
+    backslash_X.code (just backslash+letter, no special drawing), so a multiple-sub
+    decomposes those to thin-backslash + the base letter.
+    """
+    from add_stylistic_set import (
+        _resolve_glyphs, _ignore_subtable, _sub_subtable, DEFAULT_ESCAPE_CHARS,
+    )
+
+    light, heavy = wght_anchors(
+        recursive_path,
+        target_glyph="hyphen",
+        source_path=LILEX_VF,
+        probe_source="hyphen",
+        axis="vertical",
+    )
+    alt = "backslash.lilx"
+    graft_variable_alternate(
+        font,
+        source_path=LILEX_VF,
+        alt_name=alt,
+        source_glyphs=["backslash.ss03"],
+        light_wght=light,
+        heavy_wght=heavy,
+    )
+    gm = font.getReverseGlyphMap(rebuild=True)
+
+    base = "backslash"
+    inner = append_lookup(font, single_sub_lookup({base: alt}))
+
+    colon = font.getBestCmap().get(ord(":"))
+    escape_cov: set[str] = set()
+    for ch in DEFAULT_ESCAPE_CHARS:
+        escape_cov |= _resolve_glyphs(font, ch)
+    escape_cov.add(base)  # so `\\` (backslash before backslash) thins the first
+
+    # _resolve_glyphs follows GSUB single-subs, but the MONO/CASL forms (e.g.
+    # '0' -> zero.sans at MONO 0) come from FEATURE VARIATIONS it can't see. Expand
+    # to every stem-sibling so escapes thin at all axis locations (\0 \1 \r etc.).
+    stem_index: dict[str, list[str]] = {}
+    for g in font.getGlyphOrder():
+        stem_index.setdefault(g.split(".")[0], []).append(g)
+    for g in list(escape_cov):
+        escape_cov.update(stem_index.get(g.split(".")[0], []))
+
+    chain = ot.Lookup()
+    chain.LookupType = 6
+    chain.LookupFlag = 0
+    subtables = []
+    if colon:  # don't thin a drive-path backslash ( :\ )
+        subtables.append(_ignore_subtable([[colon]], [[base]], gm))
+    # don't thin the 2nd of a consecutive pair (it's the escaped literal)
+    subtables.append(_ignore_subtable([[alt]], [[base]], gm))
+    # thin when followed by an escape character
+    subtables.append(_sub_subtable([[base]], [sorted(escape_cov)], inner, gm))
+    chain.SubTable = subtables
+    chain.SubTableCount = len(subtables)
+    lookups = [append_lookup(font, chain)]
+
+    # dlig escape ligatures -> thin backslash + base letter
+    cmap = font.getBestCmap()
+    decomp = {}
+    for ch in "bnrtv":
+        code = f"backslash_{ch}.code"
+        letter = cmap.get(ord(ch))
+        if code in font["glyf"] and letter:
+            decomp[code] = [alt, letter]
+    if decomp:
+        mult = ot.Lookup()
+        mult.LookupType = 2
+        mult.LookupFlag = 0
+        mult.SubTable = [otl.buildMultipleSubstSubtable(decomp)]
+        mult.SubTableCount = 1
+        lookups.append(append_lookup(font, mult))
+
+    print(f"  • thin backslash (escape-only): Lilex wght {light}->{heavy}, "
+          f"lookups {lookups}")
+    return lookups
+
+
+# ----------------------------------------------------------------------------
+# lilx tweak: 12 added single-char arrows Recursive lacks (gated, not default).
+
+# Lilex glyph names == uniXXXX of the hooked / looping / circular / double arrows.
+ARROW_GLYPHS = [
+    "uni21A9", "uni21AA", "uni21B0", "uni21B1", "uni21B2", "uni21B3",
+    "uni21B6", "uni21B7", "uni21BA", "uni21BB", "uni21C4", "uni21C6",
+]
+
+
+def add_arrow_chars(font: TTFont, recursive_path: str) -> list[int]:
+    """Add 12 fancy single-char arrows from Lilex, GATED behind lilx.
+
+    Recursive maps none of these codepoints (they render as .notdef). To keep the
+    default pristine, each codepoint is cmap'd to a placeholder (a copy of
+    Recursive's own .notdef, so the bare font shows the same tofu OG does) and lilx
+    single-subs the placeholder to the real, variable arrow. (Tradeoff: mapping
+    these codepoints suppresses OS font-fallback for them when lilx is off — the
+    cost of gating new-codepoint glyphs behind a GSUB feature, since cmap itself
+    can't be feature-gated. Flip to always-on by cmapping straight to the arrow.)
+    """
+    light, heavy = wght_anchors(
+        recursive_path,
+        target_glyph="hyphen",
+        source_path=LILEX_VF,
+        probe_source="hyphen",
+        axis="vertical",
+    )
+    notdef = font["glyf"][".notdef"]
+    notdef_adv = font["hmtx"].metrics[".notdef"][0]
+    cmap_tables = [t for t in font["cmap"].tables if t.isUnicode()]
+
+    mapping = {}
+    for name in ARROW_GLYPHS:
+        cp = int(name[3:], 16)
+        # placeholder = static copy of .notdef (matches OG tofu)
+        ph = f"{name}.off"
+        box = copy.deepcopy(notdef)
+        box.recalcBounds(font["glyf"])
+        font["glyf"][ph] = box
+        font["hmtx"].metrics[ph] = (notdef_adv, box.xMin if box.numberOfContours > 0 else 0)
+        if ph not in font.getGlyphOrder():
+            font.setGlyphOrder(list(font.getGlyphOrder()) + [ph])
+        font["gvar"].variations[ph] = []  # static box, no variation
+
+        # real, variable arrow (reached only via lilx)
+        graft_variable_alternate(
+            font,
+            source_path=LILEX_VF,
+            alt_name=name,
+            source_glyphs=[name],
+            light_wght=light,
+            heavy_wght=heavy,
+        )
+        for t in cmap_tables:
+            t.cmap[cp] = ph
+        mapping[ph] = name
+
+    font.getReverseGlyphMap(rebuild=True)
+    idx = append_lookup(font, single_sub_lookup(mapping))
+    print(f"  • added {len(ARROW_GLYPHS)} arrows (gated): Lilex wght "
+          f"{light}->{heavy}, lookup {idx}")
+    return [idx]
+
+
+# ----------------------------------------------------------------------------
 
 
 def build(src_path: str, out_path: str) -> None:
@@ -323,6 +479,8 @@ def build(src_path: str, out_path: str) -> None:
     lilx_lookups += add_curvy_parens(font, src_path)
     lilx_lookups += add_connected_bars(font, src_path)
     lilx_lookups += add_connected_dashes(font, src_path)
+    lilx_lookups += add_thin_backslash(font, src_path)
+    lilx_lookups += add_arrow_chars(font, src_path)
 
     add_feature(font, feature_tag="lilx", lookup_indices=lilx_lookups)
     print(f"  • lilx -> lookups {lilx_lookups}")
