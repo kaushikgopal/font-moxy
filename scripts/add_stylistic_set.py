@@ -48,12 +48,22 @@ def _free_name_id(font) -> int:
 
 
 def _single_sub_map(font) -> dict[str, list[str]]:
-    """Collect every single-substitution (incl. extension) mapping in GSUB."""
+    """Collect single-substitution mappings that apply UNCONDITIONALLY.
+
+    Only lookups referenced *directly* by a feature (e.g. the frozen ssXX, like
+    r -> r.simple) are included — not lookups invoked from chain contexts (e.g.
+    the escape ligatures n -> backslash_n.code, which only fire after a backslash).
+    This gives the glyph a character renders as in plain running text.
+    """
     out: dict[str, list[str]] = {}
     gsub = font.get("GSUB")
     if not gsub:
         return out
-    for lk in gsub.table.LookupList.Lookup:
+    direct = set()
+    for fr in gsub.table.FeatureList.FeatureRecord:
+        direct.update(fr.Feature.LookupListIndex)
+    for i in direct:
+        lk = gsub.table.LookupList.Lookup[i]
         for st in lk.SubTable:
             sub, t = st, lk.LookupType
             if t == 7:  # extension
@@ -79,6 +89,41 @@ def _resolve_glyphs(font, char: str) -> set[str]:
         seen.add(g)
         stack.extend(single.get(g, []))
     return seen
+
+
+def _terminal_glyph(font, char: str):
+    """The glyph `char` ends up as after following GSUB single-subs (frozen form)."""
+    cmap = font.getBestCmap()
+    g = cmap.get(ord(char))
+    if not g:
+        return None
+    single = _single_sub_map(font)
+    seen = set()
+    while g in single and g not in seen:
+        seen.add(g)
+        g = single[g][0]
+    return g
+
+
+def _multi_sub_subtable(input_, records, glyph_map):
+    """ChainContextSubst applying several nested single-subs at given input positions."""
+    st = ot.ChainContextSubst()
+    st.Format = 3
+    st.BacktrackGlyphCount = 0
+    st.BacktrackCoverage = []
+    st.InputGlyphCount = len(input_)
+    st.InputCoverage = [otl.buildCoverage(set(g), glyph_map) for g in input_]
+    st.LookAheadGlyphCount = 0
+    st.LookAheadCoverage = []
+    recs = []
+    for seq_index, lookup_index in records:
+        r = ot.SubstLookupRecord()
+        r.SequenceIndex = seq_index
+        r.LookupListIndex = lookup_index
+        recs.append(r)
+    st.SubstLookupRecord = recs
+    st.SubstCount = len(recs)
+    return st
 
 
 def _ignore_subtable(backtrack, input_, glyph_map):
@@ -185,6 +230,29 @@ def add_stylistic_set(
         subtables.append(_ignore_subtable([[alt_glyph]], [[base_glyph]], glyph_map_ids))
         # thin when followed by an escape character
         subtables.append(_sub_subtable([[base_glyph]], [sorted(escape_cov)], inner, glyph_map_ids))
+
+        # Recursive ligates \b \n \r \t \v into combined glyphs (backslash_X.code,
+        # preceded by the LIG spacer). Decompose those to thin backslash + the
+        # plain letter so the common escapes get the thin backslash too.
+        glyf = target_font["glyf"]
+        lig_to_thin = None
+        for ch in "bnrtv":
+            code = f"backslash_{ch}.code"
+            if code not in glyf or "LIG" not in glyf:
+                continue
+            letter = _terminal_glyph(target_font, ch)
+            if not letter:
+                continue
+            if lig_to_thin is None:
+                lig_to_thin = len(LL)
+                LL.append(_single_sub_lookup({"LIG": alt_glyph}))
+            code_to_letter = len(LL)
+            LL.append(_single_sub_lookup({code: letter}))
+            subtables.append(
+                _multi_sub_subtable([["LIG"], [code]], [(0, lig_to_thin), (1, code_to_letter)],
+                                    glyph_map_ids)
+            )
+
         chain.SubTable = subtables
         chain.SubTableCount = len(subtables)
 
