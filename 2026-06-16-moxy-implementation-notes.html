@@ -89,7 +89,9 @@
 
 <p class="phase">Final</p>
 <ul class="checklist">
-  <li class="todo">Build + validate; remove dev deps; delete exec plan (last commit); repo rename (manual)</li>
+  <li class="done">Clean rebuild (8 static + VF) + validation; dev deps removed</li>
+  <li class="done">Exec plan deleted on the last commit (kept in git history)</li>
+  <li class="todo"><strong>Manual (you):</strong> rename the live GitHub repo + local dir + remote (see below)</li>
 </ul>
 
 <h2>Design decisions</h2>
@@ -185,6 +187,18 @@
   is still the old value &mdash; the next <code>make package</code> / <code>update-moxy</code>
   run recomputes <code>sha256</code>/<code>url</code> against the real v39 release and commits it.
   No GitHub release was created (not requested).
+</div>
+
+<div class="entry"><span class="tag t-open">open</span><time>2026-06-16 · repo rename (manual)</time>
+  The GitHub repo + local dir + git remote rename was <strong>intentionally not
+  executed</strong> — it's a live/destructive op that also breaks this session's working
+  path. Run it yourself when ready:
+  <br><code>gh repo rename font-moxy -R kaushikgopal/recursive-code-config</code>
+  <br><code>cd .. &amp;&amp; mv recursive-code-config font-moxy &amp;&amp; cd font-moxy</code>
+  <br><code>git remote set-url origin https://github.com/kaushikgopal/font-moxy.git</code>
+  <br>Then cut a release (<code>make package</code> or <code>/update-moxy</code>): it refreshes
+  the cask's <code>sha256</code>/<code>url</code> against the real v39 zip and commits
+  <code>homebrew-tools/Casks/font-moxy.rb</code>.
 </div>
 
 </body>

@@ -1,7 +1,7 @@
 ---
 title: Rebrand "Recursive KG" → "Moxy" + invert VF defaults + new README
 kind: software
-status: planned
+status: done
 mode: feature
 created: 2026-06-16
 updated: 2026-06-16
@@ -378,6 +378,17 @@ End state: a single lean, user-facing **`README.md`** plus a **`CUSTOMIZING.md`*
   revert toggles, attribution to Recursive + Lilex both OFL-1.1, MIT tooling).
   New `CUSTOMIZING.md` absorbs `README_KG.md` (deleted) + the build/VF/release/
   upstream-sync guide, incl. the static-vs-VF asymmetry note.
+- 2026-06-16 - executor: **DONE + validated.** Clean rebuild: 8 static `Moxy-*`
+  instances + VF all compile; VF default=Moxy, `lilx`+`ss13`=Recursive; advances
+  monospace. Dev-only Pillow/uharfbuzz removed. Commits: plan+notes → Phase A →
+  Phase B → Phase C → (final) delete this plan. **One manual step left for the
+  human** (intentionally not executed — live/destructive GitHub op that also
+  breaks the local working path): rename repo + dir + remote —
+  `gh repo rename font-moxy -R kaushikgopal/recursive-code-config`, then
+  `cd .. && mv recursive-code-config font-moxy && cd font-moxy &&
+  git remote set-url origin https://github.com/kaushikgopal/font-moxy.git`. The
+  rewritten `homebrew-tools/Casks/font-moxy.rb` gets its sha256/url refreshed +
+  committed on the next `make package` / `update-moxy` release run.
 
 ## Execution Protocol
 
