@@ -1,5 +1,5 @@
 """
-Variable-font helpers for the Recursive KG VF build (scripts/build-variable-font.py).
+Variable-font helpers for the Moxy VF build (scripts/build-variable-font.py).
 
 Unlike the static build (which instantiates 8 fixed instances and *freezes* the
 Lilex tweaks into ``calt``), the VF keeps all five Recursive axes live and exposes

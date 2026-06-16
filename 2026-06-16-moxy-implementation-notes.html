@@ -71,26 +71,14 @@
 
 <p class="phase">Phase B — rename &rarr; Moxy (static behavior unchanged)</p>
 <ul class="checklist">
-  <li class="todo">VF constants &rarr; <code>Moxy</code>/<code>Moxy-VF</code>; <code>DEFAULT_OUT</code> &rarr; <code>fonts/Moxy-VF/</code></li>
-  <li class="todo">Static naming &rarr; <code>Moxy</code>; folder <code>fonts/Moxy-Static/</code></li>
-  <li class="todo">Rename <code>config.kg.yaml</code> &rarr; <code>config.moxy.yaml</code></li>
-  <li class="todo">Rebrand comments/docstrings across <code>scripts/*.py</code></li>
-  <li class="todo">Makefile (static paths, zip, sed rewrite, version reconcile, bundle Lilex-OFL)</li>
-  <li class="todo">Skill dir &rarr; <code>update-moxy</code> + contents</li>
-  <li class="todo">Cask hand-rewrite &rarr; <code>font-moxy.rb</code> (other repo); Brewfiles</li>
-  <li class="todo">&ldquo;Moxy&rdquo; name diligence</li>
-</ul>
-
-<p class="phase">Phase B — rename &rarr; Moxy (static behavior unchanged)</p>
-<ul class="checklist">
-  <li class="todo">VF constants &rarr; <code>Moxy</code>/<code>Moxy-VF</code>; <code>DEFAULT_OUT</code> &rarr; <code>fonts/Moxy-VF/</code></li>
-  <li class="todo">Static naming &rarr; <code>Moxy</code>; folder <code>fonts/Moxy-Static/</code></li>
-  <li class="todo">Rename <code>config.kg.yaml</code> &rarr; <code>config.moxy.yaml</code></li>
-  <li class="todo">Rebrand comments/docstrings across <code>scripts/*.py</code></li>
-  <li class="todo">Makefile (static paths, zip, sed rewrite, version reconcile, bundle Lilex-OFL)</li>
-  <li class="todo">Skill dir &rarr; <code>update-moxy</code> + contents</li>
-  <li class="todo">Cask hand-rewrite &rarr; <code>font-moxy.rb</code> (other repo); Brewfiles</li>
-  <li class="todo">&ldquo;Moxy&rdquo; name diligence</li>
+  <li class="done">VF constants &rarr; <code>Moxy</code>/<code>Moxy-VF</code>; <code>DEFAULT_OUT</code> &rarr; <code>fonts/Moxy-VF/</code></li>
+  <li class="done">Static naming &rarr; <code>Moxy</code>; folder <code>fonts/Moxy-Static/</code> (verified id1/4/6/16 + filenames)</li>
+  <li class="done">Renamed <code>config.kg.yaml</code> &rarr; <code>config.moxy.yaml</code> (Family Name = "Moxy")</li>
+  <li class="done">Rebrand comments/docstrings across VF scripts</li>
+  <li class="done">Makefile (static <code>Moxy-Static</code> paths, <code>moxy-&lt;v&gt;.zip</code>, sed rewrite + assert, OFL bundle, <code>build-vf</code> target)</li>
+  <li class="done">Skill dir &rarr; <code>update-moxy</code> + contents</li>
+  <li class="done">Cask hand-rewrite &rarr; <code>font-moxy.rb</code> (homebrew-tools, uncommitted); Brewfiles updated</li>
+  <li class="done">&ldquo;Moxy&rdquo; name diligence</li>
 </ul>
 
 <p class="phase">Phase C — docs</p>
@@ -125,6 +113,16 @@
   &mdash; including connected dashes/bars and long arrows &mdash; render with zero ghostty
   config, matching the static build (which already uses <code>dlig2calt</code>). The original
   <code>dlig</code> feature is kept too (harmless; lets a user still request it explicitly).
+</div>
+
+<div class="entry"><span class="tag t-decision">decision</span><time>2026-06-16 · Phase B</time>
+  <strong>Static naming scheme changed:</strong> the config's <code>Family Name</code> is now
+  the <em>full</em> brand (dropped the hard-coded "Recursive" prefix the upstream tool forced).
+  <code>Family Name: "Moxy"</code> &rarr; family "Moxy", folder <code>fonts/Moxy-Static/</code>,
+  files <code>Moxy-&lt;Style&gt;-&lt;ver&gt;.ttf</code>, PS <code>Moxy-&lt;Style&gt;</code> (distinct
+  from the VF's <code>Moxy-VF</code>). Upstream generic configs (<code>casual.yaml</code> etc.)
+  are left as-is per your call; building them would now also drop the prefix, but they're
+  unused presets.
 </div>
 
 <h2>Deviations</h2>
@@ -174,9 +172,19 @@
   backslash). If CoreText skips it, the cmap-level bits (parens, letters, arrows) still show;
   only the contextual bits would need <code>font-feature</code> there.
 </div>
-<div class="entry"><span class="tag t-open">open</span><time>2026-06-16</time>
-  Confirm the MONO=0 letter-revert deviation above is acceptable (it is for a Mono-default
-  code font, but flagging since &ldquo;all axes reachable&rdquo; was a stated goal).
+<div class="entry"><span class="tag t-open">open</span><time>2026-06-16 · name diligence</time>
+  Quick search: no monospaced/coding font named &ldquo;Moxy&rdquo; found. There is a
+  <em>blackletter display</em> face &ldquo;<strong>Moxy Rush</strong>&rdquo; (Alit Design) and
+  Marriott&rsquo;s &ldquo;<strong>Moxy</strong>&rdquo; hotels (different category). Low
+  collision risk for a personal coding font; <strong>confirm before any public/commercial
+  release</strong>. No OFL blocker (neither Recursive nor Lilex carries a Reserved Font Name).
+</div>
+<div class="entry"><span class="tag t-open">open</span><time>2026-06-16 · cask</time>
+  <code>homebrew-tools/Casks/font-moxy.rb</code> was hand-rewritten (token/name/paths/url for
+  Moxy) but <strong>left uncommitted</strong> in that separate repo, and its <code>sha256</code>
+  is still the old value &mdash; the next <code>make package</code> / <code>update-moxy</code>
+  run recomputes <code>sha256</code>/<code>url</code> against the real v39 release and commits it.
+  No GitHub release was created (not requested).
 </div>
 
 </body>

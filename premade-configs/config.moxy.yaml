@@ -1,29 +1,23 @@
-# Configure your own custom Rec Mono for Code font
+# Moxy — build config for the static instances (derived from Recursive + Lilex)
 
 #
-#                                             /$$$$$$     /$$
-#                                            /$$    /    /  /             $$$
-#    /$$$$$$$    /$$$$$$$    /$$ $$$$$    /$$$$$$$$$   /$$$$$      /$$$$$$$ /
-#   /$$_____/   /$$____ $$  | $$$___ $$  |___ $$__/   |___ $$     /$$     $$
-#  | $$        | $$   | $$  | $$   | $$     | $$         | $$    \  $$$$$$$
-#  | $$        | $$   | $$  | $$   | $$     | $$         | $$     \  $$   /
-#  \  $$$$$$$  \  $$$$$$$   | $$   | $$   /$$$$$$$$$  /$$$$$$$$$  / $$$$$$$$
-#   \_______/   \_______/   |__/   |__/  |_________/ |_________/ | $$      $$
-#                                                                \  $$$$$$$$
-#                                                                 \_______/
+#    __  __   ___  __  __  __   __
+#   |  \/  | / _ \ \ \/ /  \ \ / /
+#   | |\/| || (_) | >  <    \ V /
+#   |_|  |_| \___/ /_/\_\    |_|
+#
+#   Moxy — a monospaced coding font (built on Recursive, borrows from Lilex)
 #
 
 # -----------------------------------------------------------------------------
 # Family Name
 
-# The name you want after "Rec Mono" in your custom fonts.
-# Example: "Custom" will yield the family "Rec Mono Custom".
+# The font family name. Moxy uses this directly (no "Rec Mono"/"Recursive"
+# prefix): "Moxy" -> family "Moxy", folder "fonts/Moxy-Static/", files
+# "Moxy-<Style>-<version>.ttf".
 # Keep under 13 characters in length to avoid potential OS bugs.
 
-# For a striking and inviting tone
-# web headlines, code snippets, command line interfaces
-
-Family Name: "KG"
+Family Name: "Moxy"
 # font version is derived from the VF source file (e.g., Recursive_VF_1.085.ttf)
 Version: "39"
 

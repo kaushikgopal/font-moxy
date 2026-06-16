@@ -1,9 +1,9 @@
 """
-Build a variable-font source of "Recursive KG" with the selected Lilex features
+Build a variable-font source of "Moxy" with the selected Lilex features
 exposed as OPT-IN OpenType features.
 
 This is a NEW, separate source from the static code-font build
-(scripts/instantiate-code-fonts.py + premade-configs/config.kg.yaml), which stays
+(scripts/instantiate-code-fonts.py + premade-configs/config.moxy.yaml), which stays
 untouched. Where the static build instantiates 8 fixed instances and *bakes* the
 Lilex tweaks into ``calt``, this build keeps all five Recursive axes
 (MONO/CASL/wght/slnt/CRSV) live and ships the tweaks as features that are OFF by
@@ -57,12 +57,12 @@ from vf_lilex import (  # noqa: E402
 RECURSIVE_VF = "font-data/Recursive_VF_1.085.ttf"
 LILEX_VF = "font-data/Lilex[wght].ttf"
 
-FAMILY = "Recursive KG"
-# The displayed family matches the static build ("Recursive KG"), but the VF gets a
+FAMILY = "Moxy"
+# The VF and the static build share the family name "Moxy", but the VF gets a
 # distinct PostScript name so it can't silently clash with the static instances'
-# "RecursiveKG-Regular" etc. if both are installed.
-PS_NAME = "RecursiveKG-VF"
-DEFAULT_OUT = "fonts/RecursiveKG-VF/RecursiveKG[MONO,CASL,wght,slnt,CRSV].ttf"
+# "Moxy-Regular" etc. if both are ever installed.
+PS_NAME = "Moxy-VF"
+DEFAULT_OUT = "fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf"
 
 # Recursive's own stylistic sets the user prefers, bundled under "Kaush's prefs":
 #   ss03 Simplified f, ss06 Simplified r, ss08 serifless L&Z, ss10 dotted 0,
@@ -71,7 +71,7 @@ KAUSH_SETS = ["ss03", "ss06", "ss08", "ss10", "ss11"]
 
 
 # ----------------------------------------------------------------------------
-# Name table — rename the family to "Recursive KG", keep every axis.
+# Name table — rename the family to "Moxy", keep every axis.
 
 
 def rename_family(font: TTFont) -> None:
@@ -515,7 +515,7 @@ def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
     _ = font["gvar"]
     _ = font["HVAR"].table.AdvWidthMap.mapping
 
-    print("Renaming family -> 'Recursive KG' (all 5 axes kept)")
+    print("Renaming family -> 'Moxy' (all 5 axes kept)")
     rename_family(font)
 
     print("Adding 'Kaush's preferences' bundle (ss13)")

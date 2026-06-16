@@ -359,6 +359,19 @@ End state: a single lean, user-facing **`README.md`** plus a **`CUSTOMIZING.md`*
   - DECISION: ligatures are now DEFAULT-ON in the VF (via `calt`), matching the
     static build's dlig2calt and the "customized by default" goal; `dlig` is kept
     too (harmless).
+- 2026-06-16 - executor: **Phase B (rename → Moxy) done.** VF constants → `Moxy`/
+  `Moxy-VF`, output `fonts/Moxy-VF/`. Static naming reworked so the config's
+  `Family Name` is the full brand (no "Recursive" prefix): `Family Name: "Moxy"` →
+  family `Moxy`, folder `fonts/Moxy-Static/`, files `Moxy-<Style>-<ver>.ttf`, PS
+  `Moxy-<Style>` (verified id1/4/6/16 + filenames; static glyph behavior
+  unchanged). `config.kg.yaml`→`config.moxy.yaml`. Makefile: `Moxy-Static` paths,
+  `moxy-<v>.zip`, repo `font-moxy`, cask `font-moxy.rb`, fixed the font-path sed +
+  added a post-package assertion, bundles `Lilex-OFL.txt`+`LICENSE` in the zip,
+  new `build-vf` target. Skill dir → `update-moxy` + rewritten. Cask hand-rewritten
+  to `font-moxy.rb` in homebrew-tools (uncommitted; sha/url refreshed by the next
+  release run). Brewfiles → `font-moxy`. Name diligence: no coding font named
+  "Moxy" (only "Moxy Rush" display + Marriott hotels; low risk, confirm before
+  public release). Upstream generic premade-configs left as-is.
 
 ## Execution Protocol
 

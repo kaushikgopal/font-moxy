@@ -75,11 +75,13 @@ def setFontNameID(font, ID, newName):
 # ----------------------------------------------
 # MAIN FUNCTION
 
+# The string to find in the source (Recursive) name records. Moxy rebrands the
+# family to the config's "Family Name" directly (no "Recursive" prefix), e.g.
+# "Moxy" -> family "Moxy", folder "fonts/Moxy-Static", files "Moxy-<Style>-<ver>.ttf".
 oldName = "Recursive"
 
 def splitFont(
-        outputDirectory=f"Recursive{fontOptions['Family Name']}".replace(" ",""),
-        newName="Recursive",
+        outputDirectory=f"{fontOptions['Family Name']}-Static".replace(" ",""),
 ):
 
     # access font as TTFont object
@@ -114,7 +116,7 @@ def splitFont(
         currentPsName = getFontNameID(instanceFont, 6)
         newPsName = (currentPsName\
             .replace("Sans", "")\
-            .replace(oldName,newName.replace(" ", "") + fontOptions['Family Name'].replace(" ",""))\
+            .replace(oldName, fontOptions['Family Name'].replace(" ",""))\
             .replace("LinearLight", instance.replace(" ", "")))
         setFontNameID(instanceFont, 6, newPsName)
 
@@ -122,7 +124,7 @@ def splitFont(
         currentFullName = getFontNameID(instanceFont, 4)
         newFullName = (currentFullName\
             .replace("Sans", "")\
-            .replace(oldName, newName + " " + fontOptions['Family Name'])\
+            .replace(oldName, fontOptions['Family Name'])\
             .replace(" Linear Light", instance))\
             .replace(" Regular", "")
         setFontNameID(instanceFont, 4, newFullName)
@@ -144,7 +146,7 @@ def splitFont(
         setFontNameID(instanceFont, 16, newFamName)
 
         newFileName = fontFileName\
-            .replace(oldName, (newName + fontOptions['Family Name']).replace(" ", ""))\
+            .replace(oldName, fontOptions['Family Name'].replace(" ", ""))\
             .replace("_VF_", "-" + instance.replace(" ", "") + "-")
 
         # make dir for new fonts
