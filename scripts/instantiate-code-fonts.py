@@ -27,6 +27,7 @@ from borrow_glyphs import borrow_glyphs
 from join_dashes import join_dashes
 from add_characters import add_characters
 from add_stylistic_set import add_stylistic_set
+from long_arrows import long_arrows
 
 # if you provide a custom config path, this picks it up
 try:
@@ -238,6 +239,10 @@ def splitFont(
                     f"{os.path.basename(joinCfg['source'])} "
                     f"(matched source wght {jres['matched_wght']})"
                 )
+                # Long arrows of arbitrary length, Recursive-style, built on the
+                # connected-dash shaft (--->, <--, <---, longer; both directions).
+                long_arrows(monoFont, recursive_vf_path=fontPath, axis_location=axisLocation)
+                print("\t• Added Recursive-style long arrows (--->, <--, …, any length)")
             else:
                 print(f"\n\t• Kept native dashes ({jres['reason']})")
 
