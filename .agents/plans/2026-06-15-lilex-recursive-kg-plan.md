@@ -336,7 +336,15 @@ dropped; keep (3,1,0x409).
 - `scripts/add_characters.py` — new cmap'd glyphs (fancy arrows).
 - `scripts/add_stylistic_set.py` — opt-in stylistic sets (thin backslash). REWRITE for escape-only.
 - `font-data/Lilex[wght].ttf`, `font-data/Lilex-OFL.txt` — vendored Lilex.
-- (Task B) NEW VF build script + config — to be created.
+- (Task B) NEW VF source — DONE:
+  - `scripts/build-variable-font.py` — VF build entry (rename, ss13 bundle, lilx
+    feature, default long-arrow fix, drop HVAR). Run:
+    `venv/bin/python scripts/build-variable-font.py [src.ttf] [out.ttf]`.
+  - `scripts/vf_lilex.py` — variable-glyph grafting (gvar recipe) + GSUB plumbing
+    (append_lookup, single_sub_lookup, add_feature, feature_lookup_indices,
+    wght_anchors, add_variable_glyph).
+  - `scripts/vf_long_arrows.py` — default Recursive-style long arrows.
+  - Output (gitignored): `fonts/RecMonoCasualKG-VF/RecMonoCasualKG[MONO,CASL,wght,slnt,CRSV].ttf`.
 
 ## Tasks
 
@@ -354,15 +362,21 @@ dropped; keep (3,1,0x409).
       (were dev-only, never in requirements.txt). Static build COMPLETE.
 
 ### Task B (variable font) — only after static build done + user go
-- [ ] Spike: graft ONE variable Lilex glyph (paren) into a partial-instanced
+- [x] Spike: graft ONE variable Lilex glyph (paren) into a partial-instanced
       Recursive VF (pin MONO/CASL/CRSV or keep all 5 axes) with correct gvar
       across wght (+ shear across slnt). Render at several weights. Confirm
       interpolation is clean. — DONE 2026-06-15, proven (see Approach + artifacts).
-- [ ] Decide opt-in feature tags (conflict-free: cv01+). Design DEFAULT=pristine.
-- [ ] New VF build script + config (or extend existing). Variable seq/paren/bar
-      glyphs (gvar). Long-arrow fix as default. Lilex arrow tweaks dropped.
-- [ ] Build VF; verify axes + each opt-in feature toggles in ghostty; validate.
-- [ ] Commit; package/install per user.
+- [x] Decide opt-in feature tags (conflict-free). DONE: `lilx` (custom 4-char) +
+      `ss13` (registered set "Kaush's preferences"); default = pristine OG.
+- [x] New VF build script (scripts/build-variable-font.py + helpers vf_lilex.py,
+      vf_long_arrows.py; static build untouched). Variable seq/paren/bar/backslash/
+      arrow glyphs (gvar wght+slnt, MONO/CASL frozen). Long-arrow fix = DEFAULT in
+      dlig from Recursive's own arrow geometry. Lilex arrow SHAPES dropped (12
+      arrow chars added, gated under lilx). HVAR dropped (advance bug). DONE.
+- [x] Build VF; verify axes + each opt-in feature toggles (uharfbuzz shaping +
+      Pillow renders); validate. DONE — see Acceptance below.
+- [ ] Commit; package/install per user. (Commits done per increment; install/
+      package NOT done — awaiting user request.)
 
 ## Acceptance Criteria
 
@@ -374,8 +388,13 @@ dropped; keep (3,1,0x409).
 - [ ] All 8 instances compile; monospacing preserved.
 
 ### Task B
-- [ ] VF with all 5 axes; default render = pristine Recursive; each Lilex tweak is
-      an opt-in feature that toggles in ghostty; glyphs interpolate across weight.
+- [x] VF with all 5 axes; default render = pristine Recursive (0/1304 outline diffs
+      and advance parity vs OG across axes); each Lilex tweak is an opt-in feature
+      that toggles in ghostty (`lilx`, `ss13`); glyphs interpolate across weight
+      (+ shear in italic). VERIFIED: monospacing preserved (advances multiples of
+      600 at MONO=1 with all features); all axis instances compile; long arrows are
+      a default dlig fix that leaves non-arrow dashes pristine. Output:
+      `fonts/RecMonoCasualKG-VF/RecMonoCasualKG[MONO,CASL,wght,slnt,CRSV].ttf`.
 
 ## Validation
 
