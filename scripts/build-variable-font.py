@@ -448,7 +448,7 @@ def add_arrow_chars(font: TTFont, recursive_path: str) -> list[int]:
 # ----------------------------------------------------------------------------
 
 
-def build(src_path: str, out_path: str) -> None:
+def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
     print(f"Loading {src_path}")
     font = TTFont(src_path)
     # Force-decompile glyf/gvar/HVAR now, before we add any glyphs. glyf/gvar store
@@ -466,6 +466,16 @@ def build(src_path: str, out_path: str) -> None:
     print("Adding 'Kaush's preferences' bundle (ss13)")
     add_kaush_preferences(font)
 
+    # ---- default fix: Recursive-style long arrows (extends dlig) --------------
+    # Built BEFORE lilx so its lookups get lower indices and HarfBuzz applies them
+    # first: the long-arrow chain then claims arrow contexts (dashes next to < or >)
+    # before lilx's connected-dash chain would turn those dashes into Lilex seq
+    # pieces. Plain dash runs (no arrowhead) fall through to lilx as before.
+    print("Adding default long-arrow fix (--->, <--, <-->, …) to dlig")
+    from vf_long_arrows import long_arrows
+    la = long_arrows(font, src_path)
+    print(f"  • long arrows -> dlig lookups {la}")
+
     # ---- lilx: the ported-from-Lilex tweaks, all behind one opt-in tag --------
     print("Building lilx feature (opt-in Lilex tweaks)")
     lilx_lookups: list[int] = []
@@ -478,12 +488,6 @@ def build(src_path: str, out_path: str) -> None:
     add_feature(font, feature_tag="lilx", lookup_indices=lilx_lookups)
     print(f"  • lilx -> lookups {lilx_lookups}")
 
-    # ---- default fix: Recursive-style long arrows (extends dlig) --------------
-    print("Adding default long-arrow fix (--->, <--, <-->, …) to dlig")
-    from vf_long_arrows import long_arrows
-    la = long_arrows(font, src_path)
-    print(f"  • long arrows -> dlig lookups {la}")
-
     # ---- keep HVAR but make the new glyphs advance-correct -------------------
     # Recursive ships HVAR; HarfBuzz reads advances from it, and glyphs beyond its
     # map repeat the last entry's +700 wght delta (our alternates would balloon to
@@ -493,6 +497,23 @@ def build(src_path: str, out_path: str) -> None:
 
     # rebuild glyph-name cache before any compile/cmap touches new glyphs
     font.getReverseGlyphMap(rebuild=True)
+
+    # ---- make it mono-by-default ---------------------------------------------
+    # Move the fvar DEFAULT to Mono Casual Regular (MONO=1, CASL=0.5, wght=375)
+    # while keeping every axis at full range, so the bare font is a usable
+    # monospace in terminals (which render a VF's default instance). All axes stay
+    # reachable: set MONO=0 for Sans, CASL=1 for more casual, wght 300–1000, etc.
+    # Nothing is baked; only the default location moves (gvar re-based by instancer).
+    if mono_default:
+        from fontTools.varLib import instancer
+        instancer.instantiateVariableFont(
+            font,
+            {"MONO": (0, 1, 1), "CASL": (0, 0.5, 1), "wght": (300, 375, 1000)},
+            inplace=True,
+        )
+        font.getReverseGlyphMap(rebuild=True)
+        print("Re-based default -> Mono Casual Regular (MONO=1, CASL=0.5, wght=375); "
+              "all axes kept")
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     font.save(out_path)

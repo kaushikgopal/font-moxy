@@ -285,11 +285,28 @@ dropped; keep (3,1,0x409).
 - 2026-06-15 - executor/human: VF default instance is MONO=0 (Sans Linear Light,
   PROPORTIONAL) per "default == pristine OG Recursive". Terminals render a VF's
   default instance, so without pinning axes the bare font is proportional Sans →
-  Ghostty grids it badly (wide uniform spacing). Fix for users: Ghostty
-  `font-variation = MONO=1` (+ CASL=0.5, wght=…). Open option: rebase the fvar
-  default to MONO=1/CASL=0.5 so it's mono-by-default (would drop the literal
-  pristine-OG default; awaiting human). Also: thin backslash lives under `lilx`
-  in the VF (NOT ss03); ss03 is Recursive's own Simplified-f (also in ss13).
+  Ghostty grids it badly (wide uniform spacing). RESOLVED (human go-ahead): rebase
+  the fvar DEFAULT to Mono Casual Regular — MONO=1, CASL=0.5, wght=375 — via the
+  instancer's (min,default,max) triples, keeping ALL axis ranges (folks can still
+  set MONO=0 Sans, CASL=1, wght 300–1000, slnt, CRSV). Nothing baked; only the
+  default location moves. Done at the END of build() (after glyphs/features), so my
+  graft logic stays anchored at the OG default and the instancer re-bases all gvar
+  uniformly. "default == OG" now means == OG@(MONO1,CASL.5,wght375) to within 1u
+  rounding (658 glyphs differ by ≤1 unit — re-rounded integer gvar deltas). Build
+  flag `mono_default=True`. Also: thin backslash lives under `lilx` in the VF (NOT
+  ss03); ss03 is Recursive's own Simplified-f (also in ss13).
+- 2026-06-15 - executor: dlig+lilx INTERACTION bug found + fixed. lilx's
+  connected-dash lookups (lower index) ran before the long-arrow fix, so with BOTH
+  on, `--->`/`<--->` had their dashes turned into Lilex seq pieces/.lilx before the
+  arrow chain could cap them (broke long arrows). FIX: build the long-arrow
+  lookups BEFORE the lilx lookups so they get lower indices and HarfBuzz applies
+  them first — the arrow chain claims arrow contexts (dashes next to < / >), and
+  lilx only connects the remaining plain dash runs. VERIFIED dlig+lilx: ---> ----> 
+  <-- <--- <--> <---> all form arrows; --- ---- ------ get lilx-connected;
+  bars/parens/backslash unaffected; default mono + mono forms.
+- 2026-06-15 - executor: HVAR repair survives the rebase — the instancer rebuilds
+  HVAR and our zero-variation new glyphs stay fixed 600/1200/1800 (verified in
+  HarfBuzz at the new default and wght=1000).
 - 2026-06-15 - executor: Recursive VF has NO `calt`; code ligatures live in `dlig`
   (e.g. L180 bar+greater→bar_greater.code) + one `liga` lookup. dlig ligates only
   `--`,`---` and the bounded arrows; runs of 4+ hyphens stay loose. So lilx's
