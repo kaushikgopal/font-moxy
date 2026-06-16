@@ -184,6 +184,17 @@ dropped; keep (3,1,0x409).
 - Lilex ARROW tweaks are DROPPED entirely (user prefers native Recursive arrows);
   the long-arrow fix becomes a DEFAULT (it just repairs broken arrows). Opt-in
   set = curvy parens, connected dashes, connected bars, thin backslash.
+- **"Kaush" bundle feature (user idea):** expose ONE named feature that enables
+  the whole curated Lilex set together (curvy parens + connected dashes +
+  connected bars + thin backslash + …), like `case`/`frac` are single toggles.
+  OT feature tags are EXACTLY 4 chars, so "kaush" can't be a literal tag — use a
+  STYLISTIC SET (ssNN) with a FeatureParams UI name "Kaush" (apps show the name),
+  whose Feature references ALL the curated lookups. Likely ALSO keep per-tweak
+  toggles (individual cvNN/ssNN) so the user can mix; the "Kaush" set is the
+  one-switch preset. OPEN: opt-in (default pristine, enable Kaush to get the
+  look — matches case/frac) vs baked-on-by-default. Leaning opt-in; one-time
+  ghostty `font-feature` enables it. This bundling does NOT change the hard part
+  (variable borrowed glyphs); it's just how the opt-in lookups are grouped.
 - Spike plan: (i) confirm opt-in stylistic set toggles in ghostty (RESOLVED — it
   works, just needs explicit enable), (ii) graft one variable Lilex glyph (a
   paren) into the partial VF with correct gvar interpolation, render at several
@@ -207,13 +218,14 @@ dropped; keep (3,1,0x409).
   `font-feature = ss03` enabled. Resolves Task B opt-in viability red flag.
 - 2026-06-15 - human: Task B = full 5-axis VF, opt-in Lilex tweaks, new VF source
   alongside the static build.
-- 2026-06-15 - executor: thin backslash rewritten to escape-only (46129a2):
-  thin only when followed by an escape char, not after ':' (drive path), not 2nd
-  of a pair. Escape chars resolved through GSUB single-subs. Mac-only name record.
-  GAP: Recursive escape LIGATURES backslash_b/n/r/t/v.code bake the backslash in,
-  so \n \t \b \v (and any \r that ligates) are NOT thinned. OPEN: how to handle —
-  (a) leave, (b) decompose to thin-\\ + letter (loses combined styling), (c) make
-  thin ligature variants (keeps styling). Awaiting human decision.
+- 2026-06-15 - executor: thin backslash rewritten to escape-only (46129a2,
+  a9f298a): thin only when followed by an escape char, not after ':' (drive
+  path), not 2nd of a pair; escape ligatures \n \t \b \r \v decomposed under
+  ss03 to thin-\ + letter. _single_sub_map restricted to feature-direct subs so
+  decomposed letters use the frozen form (r -> r.simple) not the ligature glyph.
+- 2026-06-15 - human: idea — a single named "Kaush" feature in the VF that turns
+  on the whole curated Lilex set at once (like case/frac). Captured in Approach;
+  open question opt-in vs on-by-default.
 
 ## Execution Protocol
 
