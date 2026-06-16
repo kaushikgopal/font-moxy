@@ -143,27 +143,6 @@ Borrowed Glyphs:
       parenleft: parenleft.cv13 # Lilex cv13: curvier parentheses
       parenright: parenright.cv13
 
-  # Lilex arrows: the → / ← characters and the -> --> <- ligature shapes.
-  # Weight-matched against the hyphen (a clean horizontal bar).
-  - source: font-data/Lilex[wght].ttf
-    max_stroke_mismatch: 0.18
-    probe: { target: hyphen, source: hyphen, axis: vertical }
-    glyphs:
-      uni2192: arrowright # → character
-      uni2190: arrowleft # ← character
-      arrowup: arrowup # ↑
-      arrowdown: arrowdown # ↓
-      uni2194: arrowboth # ↔
-      uni2195: arrowupdn # ↕
-      uni2196: uni2196 # ↖
-      uni2197: uni2197 # ↗
-      uni2198: uni2198 # ↘
-      uni2199: uni2199 # ↙
-      hyphen_greater.code: [hyphen_start.seq, greater_hyphen_end.seq] # ->
-      hyphen_hyphen_greater.code:
-        [hyphen_start.seq, hyphen_middle.seq, greater_hyphen_end.seq] # -->
-      less_hyphen.code: [less_hyphen_start.seq, hyphen_end.seq] # <-
-
   # Lilex cv11 "connected bar": |> and <| join the bar to the arrowhead.
   # These are backward-drawing single glyphs, so keep the source's own position.
   - source: font-data/Lilex[wght].ttf
@@ -198,23 +177,6 @@ Add Characters:
   glyphs:
     [uni21A9, uni21AA, uni21B0, uni21B1, uni21B2, uni21B3, uni21B6, uni21B7,
      uni21BA, uni21BB, uni21C4, uni21C6]
-
-# -----------------------------------------------------------------------------
-# Stylistic Sets
-#
-# Add optional, toggleable OpenType stylistic sets (off by default; enable in your
-# editor/terminal, e.g. ghostty `font-feature = ss03`). Unlike the always-on
-# borrows above, these only apply when the feature tag is selected.
-#
-# Thin backslash (Lilex ss03): a lighter \ for paths/regex/escapes. We reuse the
-# tag "ss03" to match Lilex — Recursive's own ss03 (Simplified f) is baked on via
-# the frozen Features list below, so the tag is free to drive this toggle.
-Stylistic Sets:
-  - feature: ss03
-    name: Thin backslash
-    source: font-data/Lilex[wght].ttf
-    glyphs:
-      backslash: backslash.ss03
 
 # -----------------------------------------------------------------------------
 # Font Features

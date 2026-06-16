@@ -25,9 +25,7 @@ from ttfautohint.options import USER_OPTIONS as ttfautohint_options
 from fontfreeze_activation import freeze_features
 from borrow_glyphs import borrow_glyphs
 from join_dashes import join_dashes
-from extend_arrows import extend_arrows
 from add_characters import add_characters
-from add_stylistic_set import add_stylistic_set
 
 # if you provide a custom config path, this picks it up
 try:
@@ -239,17 +237,6 @@ def splitFont(
                     f"{os.path.basename(joinCfg['source'])} "
                     f"(matched source wght {jres['matched_wght']})"
                 )
-                # Longer/missing arrows reuse the same seq pieces + weight match.
-                extend_arrows(
-                    monoFont,
-                    source_path=joinCfg["source"],
-                    slant=fontOptions["Fonts"][instance]["slnt"],
-                    matched_wght=jres["matched_wght"],
-                )
-                print(
-                    "\t• Extended arrows (--->, <--, <---, and longer) "
-                    "from " + os.path.basename(joinCfg["source"])
-                )
             else:
                 print(f"\n\t• Kept native dashes ({jres['reason']})")
 
@@ -268,22 +255,6 @@ def splitFont(
                 f"\n\t• Added {len(ares['added'])} characters from "
                 f"{os.path.basename(addCfg['source'])} "
                 f"(matched source wght {ares['matched_wght']})"
-            )
-
-        # -------------------------------------------------------
-        # Optional stylistic sets (e.g. Lilex's thin backslash, toggleable).
-        for ssCfg in fontOptions.get("Stylistic Sets") or []:
-            sres = add_stylistic_set(
-                monoFont,
-                source_path=ssCfg["source"],
-                feature_tag=ssCfg["feature"],
-                ui_name=ssCfg["name"],
-                glyph_map=ssCfg["glyphs"],
-                slant=fontOptions["Fonts"][instance]["slnt"],
-            )
-            print(
-                f"\n\t• Added optional '{sres['feature']}' ({ssCfg['name']}) "
-                f"from {os.path.basename(ssCfg['source'])}"
             )
 
         # drop STAT table to allow RIBBI style naming & linking on Windows
