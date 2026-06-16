@@ -207,6 +207,13 @@ dropped; keep (3,1,0x409).
   `font-feature = ss03` enabled. Resolves Task B opt-in viability red flag.
 - 2026-06-15 - human: Task B = full 5-axis VF, opt-in Lilex tweaks, new VF source
   alongside the static build.
+- 2026-06-15 - executor: thin backslash rewritten to escape-only (46129a2):
+  thin only when followed by an escape char, not after ':' (drive path), not 2nd
+  of a pair. Escape chars resolved through GSUB single-subs. Mac-only name record.
+  GAP: Recursive escape LIGATURES backslash_b/n/r/t/v.code bake the backslash in,
+  so \n \t \b \v (and any \r that ligates) are NOT thinned. OPEN: how to handle —
+  (a) leave, (b) decompose to thin-\\ + letter (loses combined styling), (c) make
+  thin ligature variants (keeps styling). Awaiting human decision.
 
 ## Execution Protocol
 
@@ -234,15 +241,13 @@ dropped; keep (3,1,0x409).
 ## Tasks
 
 ### Static build (finish)
-- [ ] Rewrite `add_stylistic_set.py` for escape-only contextual thin backslash:
-      ordered subtables (ignore `:\`, ignore consecutive 2nd, sub on escape-char
-      lookahead). Resolve escape chars to base+substituted glyphs. Drop Windows
-      name record (Mac-only).
-- [ ] Add config keys to the `Stylistic Sets` thin-backslash entry to drive it
-      (escape set / flags), or hardcode a sensible default in the module.
-- [ ] Build; shape-verify: `\n \t \r \b \0 \1 \\ \\b`, `C:\Users`, `:\`, lone `\`,
-      `i<5`, all 8 instances compile. Render preview.
-- [ ] Commit.
+- [x] Rewrite `add_stylistic_set.py` for escape-only contextual thin backslash
+      (committed 46129a2). Ordered subtables: ignore `:\`, ignore consecutive,
+      sub on escape-char lookahead; escape chars resolved through single-subs;
+      Mac-only name record.
+- [ ] DECIDE + maybe implement: thin the escape LIGATURES \n \t \b \v (\r)
+      (backslash_X.code) — option (a) leave / (b) decompose to thin-\ + letter /
+      (c) thin ligature variants. Awaiting human.
 - [ ] FINAL: install (`make build` or copy fonts/RecursiveKG/*.ttf to ~/Library/Fonts);
       then `venv/bin/python -m pip uninstall -y Pillow uharfbuzz`.
 
