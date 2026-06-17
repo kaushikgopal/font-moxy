@@ -44,6 +44,14 @@ build-vf:	## Build the Moxy variable font (canonical; carries the lilx/ss13 reve
 	@echo "✅ Saved to fonts/Moxy-VF/ — install manually to use the toggles"
 	@echo "   ghostty: font-family = Moxy   (pristine Recursive: font-feature = lilx, ss13)"
 
+# === Branding ===
+
+images-branding:	## Regenerate README images from branding/specimens.md (Cobalt2 theme)
+	@echo "🖼  Rendering branding images from branding/specimens.md ..."
+	@venv/bin/python -m pip install -q Pillow
+	@venv/bin/python scripts/dev/render_specimens.py
+	@echo "✅ Wrote images/specimen.png + images/comparison.png (Cobalt2)"
+
 # === Package Targets ===
 
 package: build ## Package the static fonts + create GitHub release for homebrew

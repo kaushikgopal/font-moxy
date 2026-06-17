@@ -221,5 +221,17 @@
   needs Pillow). The user's prose/ghostty tweaks were preserved.
 </div>
 
+<div class="entry"><span class="tag t-decision">resolved</span><time>2026-06-16 · branding generator</time>
+  Made the README images reproducible + content-driven: <code>branding/specimens.md</code> holds
+  the spec (wordmark, tagline, code lines, comparison rows);
+  <code>scripts/dev/render_specimens.py</code> parses it and renders deterministically with a
+  <strong>Cobalt2</strong> palette (navy + gold). New target <code>make images-branding</code>
+  (installs Pillow on demand) regenerates <code>images/specimen.png</code> +
+  <code>images/comparison.png</code>. Note: the static config diverged intentionally to family
+  <strong>"Moxy Static"</strong> / 4 styles / <code>ss03</code> off; the cask is left as-is for
+  now and the user's upgraded <code>make package</code> regenerates the cask from the built
+  fonts on the next release.
+</div>
+
 </body>
 </html>

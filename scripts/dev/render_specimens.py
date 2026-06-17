@@ -1,28 +1,80 @@
 #!/usr/bin/env python3
-"""Generate README specimen images from the actual Moxy / Recursive fonts.
-Dev-only (Pillow); not part of the build. Outputs PNGs into images/."""
+"""Deterministically render Moxy's README branding images from a markdown spec.
+
+Content lives in ``branding/specimens.md`` (wordmark, tagline, code lines, the
+comparison rows); this script only owns the *presentation* (layout + the Cobalt2
+palette). Same spec + same fonts => same PNGs.
+
+Run via ``make images-branding`` (installs Pillow, a dev-only dep). Outputs to
+``images/``.
+"""
 import os
+import re
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SPEC = os.path.join(ROOT, "branding/specimens.md")
 MOXY = os.path.join(ROOT, "fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf")
 REC = os.path.join(ROOT, "font-data/Recursive_VF_1.085.ttf")
-OUT = os.path.join(ROOT, "images")
-os.makedirs(OUT, exist_ok=True)
-S = 2  # supersample
+S = 2  # supersample, then downscale for crisp anti-aliasing
 
-# Catppuccin Mocha-ish palette
-BG     = "#1e1e2e"
-CARD   = "#181825"
-TEXT   = "#cdd6f4"
-MUTED  = "#7f849c"
-DIM    = "#585b70"
-PINK   = "#f5c2e7"
-MAUVE  = "#cba6f7"
-GREEN  = "#a6e3a1"
-BLUE   = "#89b4fa"
-PEACH  = "#fab387"
+# Cobalt2 palette (Wes Bos) — deep navy + signature gold.
+PAL = {
+    "bg":      "#193549",
+    "card":    "#122738",
+    "text":    "#ffffff",
+    "muted":   "#6c8b9f",
+    "dim":     "#3b5364",
+    "yellow":  "#ffc600",   # signature accent (wordmark, "Moxy")
+    "orange":  "#ff9d00",
+    "peach":   "#ff9d00",   # alias
+    "green":   "#3ad900",
+    "blue":    "#9effff",
+    "pink":    "#ff628c",
+    "mauve":   "#ff628c",   # alias
+    "comment": "#0088ff",
+}
+DOTS = ["#ff5f56", "#ffbd2e", "#27c93f"]  # mac traffic lights
 
+
+# ----------------------------------------------------------------- spec parsing
+def split_row(line):
+    line = line.strip().strip("|")
+    return [c.strip().replace(r"\|", "|") for c in re.split(r"(?<!\\)\|", line)]
+
+def is_sep(cells):
+    return all(re.fullmatch(r":?-+:?", c or "") for c in cells)
+
+def parse(path):
+    sections, cur, in_fence = [], None, False
+    for raw in open(path, encoding="utf-8").read().splitlines():
+        head = re.match(r"^##\s+(\S+)\s*(?:->|→)\s*(.+?)\s*$", raw)
+        if head and not in_fence:
+            cur = {"id": head.group(1), "out": head.group(2),
+                   "params": {}, "code": [], "_rows": []}
+            sections.append(cur)
+            continue
+        if cur is None:
+            continue
+        if raw.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            cur["code"].append(raw)
+            continue
+        p = re.match(r"^-\s+([\w ]+?):\s*(.*)$", raw)
+        if p:
+            cur["params"][p.group(1).strip()] = p.group(2).strip()
+            continue
+        if raw.lstrip().startswith("|"):
+            cur["_rows"].append(split_row(raw))
+    for s in sections:
+        data = [r for r in s["_rows"] if not is_sep(r)]
+        s["rows"] = data[1:]  # drop the header row
+    return sections
+
+
+# ----------------------------------------------------------------- render utils
 def font(path, px, axes):
     f = ImageFont.truetype(path, px * S)
     try:
@@ -31,85 +83,91 @@ def font(path, px, axes):
         print("axes warn:", e)
     return f
 
-def moxy(px, wght=400):   return font(MOXY, px, [1, 0.5, wght, 0, 0])
-def rec(px, wght=400):    return font(REC,  px, [1, 0.5, wght, 0, 0])
+def moxy(px, wght=400):  return font(MOXY, px, [1, 0.5, wght, 0, 0])
+def rec(px, wght=400):   return font(REC, px, [1, 0.5, wght, 0, 0])
 
-def text(d, xy, s, f, fill, features=None):
-    d.text((xy[0]*S, xy[1]*S), s, font=f, fill=fill,
-           features=(features if features is not None else ["calt"]))
+def draw(d, xy, s, f, fill, feats=("calt",)):
+    d.text((xy[0] * S, xy[1] * S), s, font=f, fill=fill, features=list(feats))
 
-def width(d, s, f, features=None):
-    return d.textlength(s, font=f, features=(features if features is not None else ["calt"]))
+def textlen(d, s, f, feats=("calt",)):
+    return d.textlength(s, font=f, features=list(feats)) / S
 
-def finish(img, path):
+def save(img, out):
+    path = os.path.join(ROOT, out)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     w, h = img.size
-    img.resize((w//S, h//S), Image.LANCZOS).save(path)
-    print("wrote", path)
+    img.resize((w // S, h // S), Image.LANCZOS).save(path)
+    print("wrote", os.path.relpath(path, ROOT))
 
 
-# ---------------------------------------------------------------- HERO
-def hero():
-    W, H = 1280, 600
-    img = Image.new("RGB", (W*S, H*S), BG)
+# ----------------------------------------------------------------- renderers
+def render_specimen(sec):
+    wordmark = sec["params"].get("wordmark", "Moxy")
+    tagline = [t.strip() for t in sec["params"].get("tagline", "").split("|") if t.strip()]
+    lines = sec["code"]
+
+    W = 1280
+    card_x, card_y, card_w = 64, 270, W - 128
+    lh, pad_top, pad_bot = 42, 58, 30
+    card_h = pad_top + len(lines) * lh + pad_bot
+    H = card_y + card_h + 60
+
+    img = Image.new("RGB", (W * S, H * S), PAL["bg"])
     d = ImageDraw.Draw(img)
 
-    # wordmark
-    text(d, (64, 70), "Moxy", moxy(150, 850), PINK)
-    wm = width(d, "Moxy", moxy(150, 850)) / S
-    text(d, (64 + wm + 28, 150), "a monospaced", moxy(30, 420), MUTED)
-    text(d, (64 + wm + 28, 188), "coding font", moxy(30, 420), MUTED)
+    draw(d, (card_x, 70), wordmark, moxy(150, 850), PAL["yellow"])
+    wm = textlen(d, wordmark, moxy(150, 850))
+    for i, t in enumerate(tagline[:2]):
+        draw(d, (card_x + wm + 28, 150 + i * 38), t, moxy(30, 420), PAL["muted"])
 
-    # terminal-ish card
-    cx, cy, cw, ch = 64, 270, W-128, 268
-    d.rounded_rectangle([cx*S, cy*S, (cx+cw)*S, (cy+ch)*S], radius=16*S, fill=CARD)
-    for i, c in enumerate(["#f38ba8", "#f9e2af", "#a6e3a1"]):
-        d.ellipse([(cx+24+i*26)*S, (cy+22)*S, (cx+24+i*26+14)*S, (cy+22+14)*S], fill=c)
+    d.rounded_rectangle(
+        [card_x * S, card_y * S, (card_x + card_w) * S, (card_y + card_h) * S],
+        radius=16 * S, fill=PAL["card"])
+    for i, c in enumerate(DOTS):
+        x = card_x + 24 + i * 26
+        d.ellipse([x * S, (card_y + 22) * S, (x + 14) * S, (card_y + 36) * S], fill=c)
 
-    px, py, lh = cx+30, cy+58, 42
     cf = moxy(26, 430)
-    # each line drawn whole so calt ligatures form; light syntax tint per line
-    text(d, (px, py+0*lh),  "fn pipe(xs):  xs |> map(f) |> sum        # connected  |>", cf, TEXT)
-    text(d, (px, py+1*lh),  "route:  start --------> end              # long arrows", cf, GREEN)
-    text(d, (px, py+2*lh),  'path = \"C:\\dev\\moxy\"  != none           # thin escape  \\\\', cf, PEACH)
-    text(d, (px, py+3*lh),  "ids:  0 1 f r L Z   <=  >=  ===  ->  =>   # letterforms", cf, BLUE)
-    finish(img, os.path.join(OUT, "specimen.png"))
+    for i, line in enumerate(lines):
+        m = re.match(r"^\[(\w+)\](.*)$", line)
+        color, txt = (PAL.get(m.group(1), PAL["text"]), m.group(2)) if m else (PAL["text"], line)
+        draw(d, (card_x + 30, card_y + pad_top + i * lh), txt, cf, color)
+    save(img, sec["out"])
 
 
-# ---------------------------------------------------------------- COMPARISON
-def comparison():
-    rows = [
-        ("parentheses",   "(sum)",            "(sum)"),
-        ("long arrows",   "start --------> end", "start --------> end"),
-        ("connected bars","|>   <|",          "|>   <|"),
-        ("dashes",        "----------",       "----------"),
-        ("escape  \\",    "\"\\n\\t C:\\dev\"",  "\"\\n\\t C:\\dev\""),
-        ("letterforms",   "f r L Z 0 1",      "f r L Z 0 1"),
-        ("extra arrows",  "\u21a9 \u21aa \u21b0 \u21c4", "\u21a9 \u21aa \u21b0 \u21c4"),
-    ]
+def render_comparison(sec):
+    title = sec["params"].get("title", "What's different from Recursive")
+    rows = sec["rows"]
+
     W = 1280
     top, rh, lblx, colL, colR = 132, 70, 64, 470, 880
-    H = top + rh*len(rows) + 40
-    img = Image.new("RGB", (W*S, H*S), BG)
+    H = top + rh * len(rows) + 40
+    img = Image.new("RGB", (W * S, H * S), PAL["bg"])
     d = ImageDraw.Draw(img)
 
-    text(d, (lblx, 40), "What's different from Recursive", moxy(34, 800), TEXT)
-    # column headers
-    text(d, (colL, 96), "Recursive", moxy(22, 600), MUTED)
-    text(d, (colR, 96), "Moxy", moxy(22, 700), PINK)
-    # divider before Moxy column
-    d.line([(colR-30)*S, top*S, (colR-30)*S, (H-30)*S], fill=DIM, width=1*S)
+    draw(d, (lblx, 40), title, moxy(34, 800), PAL["text"])
+    draw(d, (colL, 96), "Recursive", moxy(22, 600), PAL["muted"])
+    draw(d, (colR, 96), "Moxy", moxy(22, 700), PAL["yellow"])
+    d.line([(colR - 30) * S, top * S, (colR - 30) * S, (H - 30) * S], fill=PAL["dim"], width=S)
 
     rf, mf = rec(30, 430), moxy(30, 430)
-    for i, (label, lhs, rhs) in enumerate(rows):
-        y = top + i*rh
-        if i: d.line([lblx*S, (y-8)*S, (W-40)*S, (y-8)*S], fill="#313244", width=1*S)
-        text(d, (lblx, y+8), label, moxy(20, 430), DIM, features=["calt"])
-        # Recursive: its own ligatures (dlig); Moxy: default (calt)
-        text(d, (colL, y+2), lhs, rf, MUTED, features=["dlig", "calt"])
-        text(d, (colR, y+2), rhs, mf, TEXT, features=["calt"])
-    finish(img, os.path.join(OUT, "comparison.png"))
+    for i, row in enumerate(rows):
+        label, sample = (row + ["", ""])[:2]
+        y = top + i * rh
+        if i:
+            d.line([lblx * S, (y - 8) * S, (W - 40) * S, (y - 8) * S], fill="#23394a", width=S)
+        draw(d, (lblx, y + 8), label, moxy(20, 430), PAL["dim"])
+        draw(d, (colL, y + 2), sample, rf, PAL["muted"], feats=("dlig", "calt"))
+        draw(d, (colR, y + 2), sample, mf, PAL["text"], feats=("calt",))
+    save(img, sec["out"])
 
+
+RENDERERS = {"specimen": render_specimen, "comparison": render_comparison}
 
 if __name__ == "__main__":
-    hero()
-    comparison()
+    for sec in parse(SPEC):
+        r = RENDERERS.get(sec["id"])
+        if r:
+            r(sec)
+        else:
+            print("skip unknown section:", sec["id"])
