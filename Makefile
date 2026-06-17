@@ -46,11 +46,11 @@ build-vf:	## Build the Moxy variable font (canonical; carries the lilx/ss13 reve
 
 # === Branding ===
 
-images-branding:	## Regenerate README images from branding/specimens.md (Cobalt2 theme)
-	@echo "🖼  Rendering branding images from branding/specimens.md ..."
+images-branding:	## Regenerate README images from images/branding/specimens.md (Cobalt2 theme)
+	@echo "🖼  Rendering branding images from images/branding/specimens.md ..."
 	@venv/bin/python -m pip install -q Pillow
 	@venv/bin/python scripts/dev/render_specimens.py
-	@echo "✅ Wrote images/specimen.png + images/comparison.png (Cobalt2)"
+	@echo "✅ Wrote README branding images (Cobalt2)"
 
 # === Package Targets ===
 

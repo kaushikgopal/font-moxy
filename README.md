@@ -47,6 +47,10 @@ with:
 "editor.fontLigatures": true
 ```
 
+<p align="center">
+  <img src="images/branding/opentype-features.png" alt="Moxy OpenType features — defaults and active feature previews" width="100%">
+</p>
+
 ## What's different from Recursive
 
 <p align="center">

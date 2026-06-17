@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """Deterministically render Moxy's README branding images from a markdown spec.
 
-Content lives in ``branding/specimens.md`` (wordmark, tagline, code lines, the
-comparison rows); this script only owns the *presentation* (layout + the Cobalt2
-palette). Same spec + same fonts => same PNGs.
+Content lives in ``images/branding/specimens.md`` (wordmark, tagline, code lines,
+comparison rows, and OpenType feature rows); this script only owns the
+*presentation* (layout + the Cobalt2 palette). Same spec + same fonts => same
+PNGs.
 
-Run via ``make images-branding`` (installs Pillow, a dev-only dep). Outputs to
-``images/``.
+Run via ``make images-branding`` (installs Pillow, a dev-only dep).
 """
 import os
 import re
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SPEC = os.path.join(ROOT, "branding/specimens.md")
+SPEC = os.path.join(ROOT, "images/branding/specimens.md")
 MOXY = os.path.join(ROOT, "fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf")
 REC = os.path.join(ROOT, "font-data/Recursive_VF_1.085.ttf")
 S = 2  # supersample, then downscale for crisp anti-aliasing
@@ -83,7 +83,8 @@ def font(path, px, axes):
         print("axes warn:", e)
     return f
 
-def moxy(px, wght=400):  return font(MOXY, px, [1, 0.5, wght, 0, 0])
+def moxy(px, wght=400, mono=1, casl=0.5, slnt=0, crsv=0):
+    return font(MOXY, px, [mono, casl, wght, slnt, crsv])
 def rec(px, wght=400):   return font(REC, px, [1, 0.5, wght, 0, 0])
 
 def draw(d, xy, s, f, fill, feats=("calt",)):
@@ -91,6 +92,34 @@ def draw(d, xy, s, f, fill, feats=("calt",)):
 
 def textlen(d, s, f, feats=("calt",)):
     return d.textlength(s, font=f, features=list(feats)) / S
+
+def parse_features(s):
+    return tuple(p.strip() for p in s.split(",") if p.strip())
+
+def rich_parts(s):
+    parts, buf, highlight = [], [], False
+    for ch in s:
+        if ch == "{":
+            if buf:
+                parts.append(("".join(buf), highlight))
+                buf = []
+            highlight = True
+        elif ch == "}":
+            if buf:
+                parts.append(("".join(buf), highlight))
+                buf = []
+            highlight = False
+        else:
+            buf.append(ch)
+    if buf:
+        parts.append(("".join(buf), highlight))
+    return parts
+
+def draw_rich(d, xy, s, f, fill, accent, feats=()):
+    x, y = xy
+    for text, highlight in rich_parts(s):
+        draw(d, (x, y), text, f, accent if highlight else fill, feats=feats)
+        x += textlen(d, text, f, feats=feats)
 
 def save(img, out):
     path = os.path.join(ROOT, out)
@@ -164,7 +193,57 @@ def render_comparison(sec):
     save(img, sec["out"])
 
 
-RENDERERS = {"specimen": render_specimen, "comparison": render_comparison}
+def render_opentype_features(sec):
+    title = sec["params"].get("title", "Moxy > OpenType Features")
+    rows = sec["rows"]
+
+    W = 1240
+    x_tag, x_desc, x_default, x_active = 66, 300, 724, 986
+    title_y, header_y, row_top = 54, 132, 188
+    row_h, bottom = 66, 34
+    H = row_top + len(rows) * row_h + bottom
+    img = Image.new("RGB", (W * S, H * S), "#111827")
+    d = ImageDraw.Draw(img)
+
+    title_f = moxy(25, 800)
+    head_f = moxy(23, 760)
+    tag_f = moxy(25, 760)
+    desc_f = moxy(25, 420)
+    sample_f = moxy(26, 650)
+    sample_italic = moxy(26, 650, slnt=-15, crsv=1)
+    sample_sans = moxy(26, 650, mono=0)
+    sample_sans_italic = moxy(26, 650, mono=0, slnt=-15, crsv=1)
+
+    draw(d, (x_tag, title_y), title, title_f, PAL["text"], feats=())
+    draw(d, (x_default, header_y), "Default", head_f, PAL["text"], feats=())
+    draw(d, (x_active, header_y), "Active", head_f, PAL["text"], feats=())
+    d.line([0, (row_top - 8) * S, W * S, (row_top - 8) * S], fill="#315076", width=S)
+
+    for i, row in enumerate(rows):
+        cells = (row + [""] * 7)[:7]
+        tag, label, default, active, active_feats, style, default_feats = cells
+        y = row_top + i * row_h
+        f = {
+            "italic": sample_italic,
+            "sans": sample_sans,
+            "sans-italic": sample_sans_italic,
+        }.get(style, sample_f)
+        draw(d, (x_tag, y + 19), tag, tag_f, PAL["text"], feats=())
+        draw(d, (x_desc, y + 19), label, desc_f, "#8d96a8", feats=())
+        draw_rich(d, (x_default, y + 18), default, f, "#e5e7eb",
+                  PAL["blue"], feats=parse_features(default_feats))
+        draw_rich(d, (x_active, y + 18), active, f, "#e5e7eb",
+                  "#16f4f4", feats=parse_features(active_feats))
+        d.line([0, (y + row_h) * S, W * S, (y + row_h) * S], fill="#315076", width=S)
+
+    save(img, sec["out"])
+
+
+RENDERERS = {
+    "specimen": render_specimen,
+    "comparison": render_comparison,
+    "opentype-features": render_opentype_features,
+}
 
 if __name__ == "__main__":
     for sec in parse(SPEC):
