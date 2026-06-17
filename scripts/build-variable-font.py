@@ -1,15 +1,13 @@
 """
-Build a variable-font source of "Moxy" with the selected Lilex features
-exposed as OPT-IN OpenType features.
+Build a variable-font source of "Moxy" from premade-configs/config.moxy-vf.yaml.
 
-This is a NEW, separate source from the static code-font build
-(scripts/instantiate-code-fonts.py + premade-configs/config.moxy.yaml), which stays
-untouched. Where the static build instantiates 8 fixed instances and *bakes* the
-Lilex tweaks into ``calt``, this build keeps all five Recursive axes
-(MONO/CASL/wght/slnt/CRSV) live and ships the tweaks as features that are OFF by
-default. So the bare font renders as pristine, fully-variable OG Recursive.
+This is separate from the static code-font build
+(scripts/instantiate-code-fonts.py + premade-configs/config.moxy.yaml), which
+instantiates fixed fonts and bakes the Lilex tweaks into ``calt``. The VF keeps all
+five Recursive axes (MONO/CASL/wght/slnt/CRSV) live, makes the Moxy choices the
+default, and exposes opt-in reverts.
 
-Two opt-in bundles (both off by default):
+Two revert bundles:
 
   * ``lilx`` (custom 4-char feature tag) — the ported-from-Lilex tweaks only:
     curvy parens (Lilex cv13), connected dashes, connected bars (Lilex cv11),
@@ -25,7 +23,7 @@ connected-dash shaft.
 
 Usage:
     venv/bin/python scripts/build-variable-font.py \
-        [font-data/Recursive_VF_1.085.ttf] [out.ttf]
+        [premade-configs/config.moxy-vf.yaml] [font-data/Recursive_VF_1.085.ttf] [out.ttf]
 
 Lilex is SIL OFL 1.1 (see font-data/Lilex-OFL.txt); bundle that notice on
 distribution.
@@ -34,11 +32,14 @@ distribution.
 from __future__ import annotations
 
 import copy
+import glob
 import os
+import re
 import sys
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables import otTables as ot
 from fontTools.otlLib import builder as otl
+import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -54,6 +55,7 @@ from vf_lilex import (  # noqa: E402
     wght_anchors,
 )
 
+DEFAULT_CONFIG = "premade-configs/config.moxy-vf.yaml"
 RECURSIVE_VF = "font-data/Recursive_VF_1.085.ttf"
 LILEX_VF = "font-data/Lilex[wght].ttf"
 
@@ -63,6 +65,7 @@ FAMILY = "Moxy"
 # "Moxy-Regular" etc. if both are ever installed.
 PS_NAME = "Moxy-VF"
 DEFAULT_OUT = "fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf"
+DEFAULT_AXIS_LOCATION = {"MONO": 1, "CASL": 0.5, "wght": 375}
 
 # OFL-1.1 license metadata baked into the name table (id 0/13/14), so the license
 # travels with the binary. Moxy derives from Recursive + Lilex (both OFL-1.1), so
@@ -84,11 +87,62 @@ LICENSE_URL = "https://openfontlicense.org"
 KAUSH_SETS = ["ss03", "ss06", "ss08", "ss10", "ss11"]
 
 
+def load_config(config_path: str) -> dict:
+    with open(config_path, encoding="utf-8") as file:
+        return yaml.safe_load(file) or {}
+
+
+def resolve_glob(path: str) -> str:
+    matches = sorted(glob.glob(path))
+    return matches[0] if matches else path
+
+
+def font_version(src_path: str) -> str:
+    match = re.search(r"_VF_([0-9.]+)\.ttf$", os.path.basename(src_path))
+    return match.group(1) if match else "1.085"
+
+
+def configure_globals(options: dict) -> None:
+    global FAMILY, PS_NAME, LILEX_VF, KAUSH_SETS, ARROW_GLYPHS
+
+    FAMILY = options.get("Family Name", FAMILY)
+    PS_NAME = options.get("PostScript Name", PS_NAME)
+    LILEX_VF = options.get("Lilex VF", LILEX_VF)
+    if "Features" in options:
+        KAUSH_SETS = list(options.get("Features") or [])
+
+    add_chars = options.get("Add Characters") or {}
+    if add_chars.get("source"):
+        LILEX_VF = add_chars["source"]
+    if add_chars.get("glyphs"):
+        ARROW_GLYPHS = list(add_chars["glyphs"])
+
+
+def has_glyph_mapping(options: dict, target: str, source: str) -> bool:
+    for spec in options.get("Borrowed Glyphs") or []:
+        if (spec.get("glyphs") or {}).get(target) == source:
+            return True
+    return False
+
+
+def has_stylistic_set(options: dict, target: str, source: str) -> bool:
+    for spec in options.get("Stylistic Sets") or []:
+        if (spec.get("glyphs") or {}).get(target) == source:
+            return True
+    return False
+
+
+def default_axis_location(options: dict) -> dict:
+    if "Default Axis Location" in options:
+        return dict(options.get("Default Axis Location") or {})
+    return dict(DEFAULT_AXIS_LOCATION)
+
+
 # ----------------------------------------------------------------------------
 # Name table — rename the family to "Moxy", keep every axis.
 
 
-def rename_family(font: TTFont) -> None:
+def rename_family(font: TTFont, source_version: str) -> None:
     name = font["name"]
 
     def setname(nid, value):
@@ -96,7 +150,7 @@ def rename_family(font: TTFont) -> None:
 
     setname(1, FAMILY)               # Font Family
     setname(2, "Regular")            # Subfamily (RIBBI default-instance label)
-    setname(3, f"1.085;ARRW;{PS_NAME}")  # Unique ID
+    setname(3, f"{source_version};ARRW;{PS_NAME}")  # Unique ID
     setname(4, FAMILY)               # Full font name (default instance)
     setname(6, PS_NAME)              # PostScript name (distinct from static build)
     setname(16, FAMILY)              # Typographic Family
@@ -494,13 +548,28 @@ SEMICASUAL_INSTANCES = [
 ]
 
 
-def add_semicasual_instances(font: TTFont) -> None:
+def add_semicasual_instances(font: TTFont, instances: list[dict] | None = None) -> None:
     from fontTools.ttLib.tables._f_v_a_r import NamedInstance
     name = font["name"]
     added = 0
-    for subfamily, wght, slnt, crsv in SEMICASUAL_INSTANCES:
-        coords = {"MONO": 1.0, "CASL": 0.5, "wght": float(wght),
-                  "slnt": float(slnt), "CRSV": float(crsv)}
+    configured = instances if instances is not None else [
+        {
+            "name": subfamily,
+            "MONO": 1.0,
+            "CASL": 0.5,
+            "wght": wght,
+            "slnt": slnt,
+            "CRSV": crsv,
+        }
+        for subfamily, wght, slnt, crsv in SEMICASUAL_INSTANCES
+    ]
+    for spec in configured:
+        subfamily = spec["name"]
+        coords = {
+            tag: float(spec[tag])
+            for tag in ("MONO", "CASL", "wght", "slnt", "CRSV")
+            if tag in spec
+        }
         # skip if an instance already sits at these exact coordinates
         if any(i.coordinates == coords for i in font["fvar"].instances):
             continue
@@ -520,7 +589,10 @@ def add_semicasual_instances(font: TTFont) -> None:
 # ----------------------------------------------------------------------------
 
 
-def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
+def build(src_path: str, out_path: str, options: dict | None = None) -> None:
+    options = load_config(DEFAULT_CONFIG) if options is None else options
+    configure_globals(options)
+
     print(f"Loading {src_path}")
     font = TTFont(src_path)
     # Force-decompile glyf/gvar/HVAR now, before we add any glyphs. glyf/gvar store
@@ -532,33 +604,41 @@ def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
     _ = font["gvar"]
     _ = font["HVAR"].table.AdvWidthMap.mapping
 
-    print("Renaming family -> 'Moxy' (all 5 axes kept)")
-    rename_family(font)
+    print(f"Renaming family -> '{FAMILY}' (all 5 axes kept)")
+    rename_family(font, font_version(src_path))
 
-    print("Adding 'Kaush's preferences' bundle (ss13)")
-    add_kaush_preferences(font)
+    if KAUSH_SETS:
+        print("Adding Recursive choices bundle (ss13)")
+        add_kaush_preferences(font)
 
     # ---- default fix: Recursive-style long arrows (extends dlig) --------------
     # Built BEFORE lilx so its lookups get lower indices and HarfBuzz applies them
     # first: the long-arrow chain then claims arrow contexts (dashes next to < or >)
     # before lilx's connected-dash chain would turn those dashes into Lilex seq
     # pieces. Plain dash runs (no arrowhead) fall through to lilx as before.
-    print("Adding default long-arrow fix (--->, <--, <-->, …) to dlig")
-    from vf_long_arrows import long_arrows
-    la = long_arrows(font, src_path)
-    print(f"  • long arrows -> dlig lookups {la}")
+    if options.get("Long Arrows", True):
+        print("Adding default long-arrow fix (--->, <--, <-->, …) to dlig")
+        from vf_long_arrows import long_arrows
+        la = long_arrows(font, src_path)
+        print(f"  • long arrows -> dlig lookups {la}")
 
     # ---- lilx: the ported-from-Lilex tweaks, all behind one opt-in tag --------
     print("Building lilx feature (opt-in Lilex tweaks)")
     lilx_lookups: list[int] = []
-    lilx_lookups += add_curvy_parens(font, src_path)
-    lilx_lookups += add_connected_bars(font, src_path)
-    lilx_lookups += add_connected_dashes(font, src_path)
-    lilx_lookups += add_thin_backslash(font, src_path)
-    lilx_lookups += add_arrow_chars(font, src_path)
+    if has_glyph_mapping(options, "parenleft", "parenleft.cv13"):
+        lilx_lookups += add_curvy_parens(font, src_path)
+    if has_glyph_mapping(options, "bar_greater.code", "bar_greater.liga.cv11"):
+        lilx_lookups += add_connected_bars(font, src_path)
+    if options.get("Join Dashes"):
+        lilx_lookups += add_connected_dashes(font, src_path)
+    if has_stylistic_set(options, "backslash", "backslash.ss03"):
+        lilx_lookups += add_thin_backslash(font, src_path)
+    if options.get("Add Characters"):
+        lilx_lookups += add_arrow_chars(font, src_path)
 
-    add_feature(font, feature_tag="lilx", lookup_indices=lilx_lookups)
-    print(f"  • lilx -> lookups {lilx_lookups}")
+    if lilx_lookups:
+        add_feature(font, feature_tag="lilx", lookup_indices=lilx_lookups)
+        print(f"  • lilx -> lookups {lilx_lookups}")
 
     # ---- keep HVAR but make the new glyphs advance-correct -------------------
     # Recursive ships HVAR; HarfBuzz reads advances from it, and glyphs beyond its
@@ -573,9 +653,14 @@ def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
     # ---- invert defaults: Moxy look becomes default; features become reverts -
     # (plan Phase A / Option B). Runs after lilx/ss13/long-arrows exist, before
     # the mono-default rebase. Adds no glyphs (cmap edits + appended lookups).
-    print("Inverting defaults (Moxy look default; lilx/ss13/ssNN become reverts)")
-    from vf_invert import invert_defaults
-    invert_defaults(font)
+    if options.get("Invert Defaults", True):
+        print("Inverting defaults (Moxy look default; lilx/ss13/ssNN become reverts)")
+        from vf_invert import invert_defaults
+        invert_defaults(
+            font,
+            ss_tags=KAUSH_SETS,
+            code_ligatures=options.get("Code Ligatures", True),
+        )
 
     # ---- make it mono-by-default ---------------------------------------------
     # Move the fvar DEFAULT to Mono Casual Regular (MONO=1, CASL=0.5, wght=375)
@@ -583,16 +668,22 @@ def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
     # monospace in terminals (which render a VF's default instance). All axes stay
     # reachable: set MONO=0 for Sans, CASL=1 for more casual, wght 300–1000, etc.
     # Nothing is baked; only the default location moves (gvar re-based by instancer).
-    if mono_default:
+    axis_defaults = default_axis_location(options)
+    if axis_defaults:
         from fontTools.varLib import instancer
+        axis_limits = {
+            axis.axisTag: (axis.minValue, float(axis_defaults[axis.axisTag]), axis.maxValue)
+            for axis in font["fvar"].axes
+            if axis.axisTag in axis_defaults
+        }
         instancer.instantiateVariableFont(
             font,
-            {"MONO": (0, 1, 1), "CASL": (0, 0.5, 1), "wght": (300, 375, 1000)},
+            axis_limits,
             inplace=True,
         )
         font.getReverseGlyphMap(rebuild=True)
-        print("Re-based default -> Mono Casual Regular (MONO=1, CASL=0.5, wght=375); "
-              "all axes kept")
+        pretty = ", ".join(f"{tag}={value}" for tag, value in axis_defaults.items())
+        print(f"Re-based default -> {pretty}; all axes kept")
 
     # ---- named instances at the Mono Semicasual (CASL=0.5) use points ---------
     # Recursive's inherited named instances only sit at CASL 0/1 and MONO 0/1, so
@@ -600,14 +691,30 @@ def build(src_path: str, out_path: str, mono_default: bool = True) -> None:
     # snaps our CASL=0.5 default — and any font-variation=CASL=0.5 — to Casual.
     # Add exact named instances at MONO=1, CASL=0.5 (incl. the default) so those
     # render correctly. Additive: the CASL 0/1 instances stay, so those keep working.
-    add_semicasual_instances(font)
+    add_semicasual_instances(font, options.get("Named Instances"))
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     font.save(out_path)
     print(f"\n→ Saved {out_path}")
 
 
+def parse_args(argv: list[str]) -> tuple[dict, str, str]:
+    args = list(argv)
+    config_path = DEFAULT_CONFIG
+    if args and args[0].endswith((".yaml", ".yml")):
+        config_path = args.pop(0)
+
+    options = load_config(config_path)
+    source = args.pop(0) if args else options.get("Source VF", RECURSIVE_VF)
+    out = args.pop(0) if args else options.get("Output Path", DEFAULT_OUT)
+    if args:
+        raise SystemExit(
+            "Usage: build-variable-font.py "
+            "[premade-configs/config.moxy-vf.yaml] [source-vf.ttf] [out.ttf]"
+        )
+    return options, resolve_glob(source), out
+
+
 if __name__ == "__main__":
-    src = sys.argv[1] if len(sys.argv) > 1 else RECURSIVE_VF
-    out = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_OUT
-    build(src, out)
+    config, src, out = parse_args(sys.argv[1:])
+    build(src, out, config)

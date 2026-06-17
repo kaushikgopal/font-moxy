@@ -1,0 +1,118 @@
+# Moxy - build config for the variable font (derived from Recursive + Lilex)
+#
+# This mirrors the static config's shape where it can, but the VF keeps Recursive's
+# axes live and turns the Moxy choices into defaults with opt-in reverts.
+#
+# Important: this config is applied to Recursive's original variable font, before
+# Moxy's default/revert inversion. Any OpenType feature tags here must be Recursive
+# source features, not Moxy runtime/revert features.
+
+# -----------------------------------------------------------------------------
+# Family / output
+
+Family Name: "Moxy"
+PostScript Name: "Moxy-VF"
+Version: "1"
+
+Source VF: "font-data/Recursive_VF_1.085.ttf"
+Lilex VF: "font-data/Lilex[wght].ttf"
+Output Path: "fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf"
+
+# -----------------------------------------------------------------------------
+# Variable default
+#
+# The VF keeps each axis range, but moves the default point so plain `Moxy` is a
+# mono semicasual regular. Omit an axis to keep Recursive's source default.
+
+Default Axis Location:
+  MONO: 1
+  CASL: 0.5
+  wght: 375
+
+# Extra named instances at CASL=0.5 keep macOS CoreText from snapping the default
+# and semicasual use-points to Recursive's CASL=0 or CASL=1 named instances.
+Named Instances:
+  - { name: Light, MONO: 1, CASL: 0.5, wght: 300, slnt: 0, CRSV: 0.5 }
+  - { name: Regular, MONO: 1, CASL: 0.5, wght: 375, slnt: 0, CRSV: 0.5 }
+  - { name: Medium, MONO: 1, CASL: 0.5, wght: 500, slnt: 0, CRSV: 0.5 }
+  - { name: Bold, MONO: 1, CASL: 0.5, wght: 700, slnt: 0, CRSV: 0.5 }
+  - { name: Black, MONO: 1, CASL: 0.5, wght: 900, slnt: 0, CRSV: 0.5 }
+  - { name: Light Italic, MONO: 1, CASL: 0.5, wght: 300, slnt: -15, CRSV: 0.5 }
+  - { name: Italic, MONO: 1, CASL: 0.5, wght: 375, slnt: -15, CRSV: 0.5 }
+  - { name: Medium Italic, MONO: 1, CASL: 0.5, wght: 500, slnt: -15, CRSV: 0.5 }
+  - { name: Bold Italic, MONO: 1, CASL: 0.5, wght: 700, slnt: -15, CRSV: 0.5 }
+  - { name: Black Italic, MONO: 1, CASL: 0.5, wght: 900, slnt: -15, CRSV: 0.5 }
+
+# -----------------------------------------------------------------------------
+# Font features from Recursive
+#
+# Use Recursive's feature tags here, not Moxy's feature tags.
+# - Good: ss03, ss06, ss08, ss10, ss11, etc. from Recursive.
+# - Do not use: lilx, ss13, or other Moxy variable-font revert toggles.
+#
+# These Recursive source features become default-on in the Moxy VF. After the build
+# inverts defaults, ss13 becomes the runtime toggle that reverts them back toward
+# Recursive. That means ss13 is an output feature, not an input setting here.
+#
+# Keep this list to Recursive single-substitution ssNN features.
+#
+# Recursive feature reference:
+#     https://github.com/arrowtype/recursive-code-config#1-customize-your-font-settings-in-configyaml
+
+Code Ligatures: True
+Long Arrows: True
+Invert Defaults: True
+
+Features:
+  # - ss01 # Single story a
+  # - ss02 # Single story g
+  - ss03 # Simplified f
+  # - ss04 # Simplified i
+  # - ss05 # Simplified l
+  - ss06 # Simplified r
+  # - ss07 # Simplified italic diagonals
+  - ss08 # No-serif L and Z
+  # - ss09 # Simplified 6 & 9
+  - ss10 # Dotted 0
+  - ss11 # Simplified 1
+  # - ss12 # Simplified @
+
+# -----------------------------------------------------------------------------
+# Lilex section starts - Borrowed Glyphs
+#
+# These match the static config, but in the VF they are built as variable glyphs
+# and then inverted so the Moxy look is the default.
+
+Borrowed Glyphs:
+  - source: font-data/Lilex[wght].ttf
+    max_stroke_mismatch: 0.12
+    probe: { target: parenleft, source: parenleft.cv13, axis: horizontal }
+    glyphs:
+      parenleft: parenleft.cv13
+      parenright: parenright.cv13
+
+  - source: font-data/Lilex[wght].ttf
+    max_stroke_mismatch: 0.18
+    align: preserve
+    probe: { target: bar, source: bar, axis: horizontal }
+    glyphs:
+      bar_greater.code: bar_greater.liga.cv11
+      less_bar.code: less_bar.liga.cv11
+
+Join Dashes:
+  source: font-data/Lilex[wght].ttf
+  max_stroke_mismatch: 0.18
+
+Add Characters:
+  source: font-data/Lilex[wght].ttf
+  glyphs:
+    [uni21A9, uni21AA, uni21B0, uni21B1, uni21B2, uni21B3, uni21B6, uni21B7,
+     uni21BA, uni21BB, uni21C4, uni21C6]
+
+Stylistic Sets:
+  - feature: lilx
+    name: Thin escape backslash
+    source: font-data/Lilex[wght].ttf
+    escape_only: true
+    glyphs:
+      backslash: backslash.ss03

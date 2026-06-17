@@ -8,9 +8,10 @@ plus a set of scripts that graft in the Lilex tweaks. There are two artifacts:
   **This is what the homebrew cask ships.** The look is frozen per the config; there
   are no runtime toggles.
 - **Variable font** (`fonts/Moxy-VF/`) — one 5-axis file built by
-  `scripts/build-variable-font.py`. This is the canonical Moxy: it defaults to the
-  Moxy look and exposes the `lilx` / `ss13` / `ssNN` reverts. Install it yourself if
-  you want the toggles; it is not part of the cask.
+  `scripts/build-variable-font.py` from `premade-configs/config.moxy-vf.yaml`. This
+  is the canonical Moxy: it defaults to the Moxy look and exposes the `lilx` /
+  `ss13` / `ssNN` reverts. Install it yourself if you want the toggles; it is not
+  part of the cask.
 
 > **Static vs variable, plainly:** the shipped static font has the Moxy look baked
 > in with **no** way back to Recursive. The variable font has the same default look
@@ -58,6 +59,13 @@ or directly:
 venv/bin/python scripts/build-variable-font.py
 ```
 
+or with the config explicit:
+
+```bash
+venv/bin/python scripts/build-variable-font.py \
+    premade-configs/config.moxy-vf.yaml font-data/Recursive_VF_1.085.ttf
+```
+
 Install that `.ttf` manually to use the toggles. In Ghostty:
 
 ```ini
@@ -96,6 +104,12 @@ script at it:
 ```bash
 venv/bin/python scripts/instantiate-code-fonts.py premade-configs/<your-config>.yaml
 ```
+
+## Tweak the variable font recipe
+
+Edit `premade-configs/config.moxy-vf.yaml`. It controls the VF family/output names,
+the default axis location, the `ss13` Recursive-choice bundle, code ligatures, long
+arrows, and the Lilex-derived glyph tweaks used before the defaults are inverted.
 
 ## Cut a release
 

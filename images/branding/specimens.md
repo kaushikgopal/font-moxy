@@ -47,7 +47,7 @@ ids:  0 1 f r L Z   <=  >=  ===  ->  =>       # letterforms
 
 ## opentype-features -> images/branding/opentype-features.png
 
-- title: Moxy > OpenType Features
+- title: Moxy |> OpenType Features
 
 | tag | description | default | active | active features | style | default features |
 | --- | --- | --- | --- | --- | --- | --- |

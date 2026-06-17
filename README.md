@@ -47,10 +47,6 @@ with:
 "editor.fontLigatures": true
 ```
 
-<p align="center">
-  <img src="images/branding/opentype-features.png" alt="Moxy OpenType features — defaults and active feature previews" width="100%">
-</p>
-
 ## What's different from Recursive
 
 <p align="center">
@@ -88,6 +84,12 @@ see [recursive.design](https://www.recursive.design/).
 Moxy is generated from the Recursive variable font plus a small set of scripts.
 See **[CUSTOMIZING.md](CUSTOMIZING.md)** to build the static fonts, build the
 variable font, tweak which features are baked in, or cut a release.
+
+## OpenType features
+
+<p align="center">
+  <img src="images/branding/opentype-features.png" alt="Moxy OpenType features — defaults and active feature previews" width="100%">
+</p>
 
 ## Attribution & license
 

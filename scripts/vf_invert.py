@@ -105,7 +105,12 @@ def _invert_forward(forward: dict[str, str], glyphs: set[str]) -> dict[str, str]
 # ----------------------------------------------------------------------------
 
 
-def invert_defaults(font: TTFont) -> None:
+def invert_defaults(
+    font: TTFont,
+    ss_tags: list[str] | None = None,
+    code_ligatures: bool = True,
+) -> None:
+    ss_tags = list(ss_tags or ["ss03", "ss06", "ss08", "ss10", "ss11"])
     gsub = font["GSUB"].table
     LL = gsub.LookupList.Lookup
     go = set(font.getGlyphOrder())
@@ -156,12 +161,11 @@ def invert_defaults(font: TTFont) -> None:
                 t.cmap[cp] = arrow_off_map[g]
 
     # ---- 3. letterforms: forward → default; build reverse per ssNN --------
-    ss_tags = ["ss03", "ss06", "ss08", "ss10", "ss11"]
     ss_fwd_by_tag = {tag: feature_lookup_indices(font, [tag]) for tag in ss_tags}
     all_ss_fwd = sorted({i for v in ss_fwd_by_tag.values() for i in v})
 
     # ---- 4. Recursive ligatures + long arrows (currently in dlig) ---------
-    dlig_fwd = feature_lookup_indices(font, ["dlig"])
+    dlig_fwd = feature_lookup_indices(font, ["dlig"]) if code_ligatures else []
 
     # ---- 5. NEW default-on calt = dlig + ss-forward + connected-forward ----
     # Sorted by lookup index so existing ordering invariants hold (Recursive

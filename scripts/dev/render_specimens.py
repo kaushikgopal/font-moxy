@@ -202,7 +202,7 @@ def render_opentype_features(sec):
     title_y, header_y, row_top = 54, 132, 188
     row_h, bottom = 66, 34
     H = row_top + len(rows) * row_h + bottom
-    img = Image.new("RGB", (W * S, H * S), "#111827")
+    img = Image.new("RGB", (W * S, H * S), PAL["bg"])
     d = ImageDraw.Draw(img)
 
     title_f = moxy(25, 800)
@@ -217,7 +217,7 @@ def render_opentype_features(sec):
     draw(d, (x_tag, title_y), title, title_f, PAL["text"], feats=())
     draw(d, (x_default, header_y), "Default", head_f, PAL["text"], feats=())
     draw(d, (x_active, header_y), "Active", head_f, PAL["text"], feats=())
-    d.line([0, (row_top - 8) * S, W * S, (row_top - 8) * S], fill="#315076", width=S)
+    d.line([0, (row_top - 8) * S, W * S, (row_top - 8) * S], fill=PAL["dim"], width=S)
 
     for i, row in enumerate(rows):
         cells = (row + [""] * 7)[:7]
@@ -229,12 +229,12 @@ def render_opentype_features(sec):
             "sans-italic": sample_sans_italic,
         }.get(style, sample_f)
         draw(d, (x_tag, y + 19), tag, tag_f, PAL["text"], feats=())
-        draw(d, (x_desc, y + 19), label, desc_f, "#8d96a8", feats=())
-        draw_rich(d, (x_default, y + 18), default, f, "#e5e7eb",
+        draw(d, (x_desc, y + 19), label, desc_f, PAL["muted"], feats=())
+        draw_rich(d, (x_default, y + 18), default, f, PAL["text"],
                   PAL["blue"], feats=parse_features(default_feats))
-        draw_rich(d, (x_active, y + 18), active, f, "#e5e7eb",
-                  "#16f4f4", feats=parse_features(active_feats))
-        d.line([0, (y + row_h) * S, W * S, (y + row_h) * S], fill="#315076", width=S)
+        draw_rich(d, (x_active, y + 18), active, f, PAL["text"],
+                  PAL["blue"], feats=parse_features(active_feats))
+        d.line([0, (y + row_h) * S, W * S, (y + row_h) * S], fill=PAL["dim"], width=S)
 
     save(img, sec["out"])
 

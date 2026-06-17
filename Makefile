@@ -5,6 +5,7 @@ default: build
 # The folder and file names follow the config's "Family Name" with spaces turned
 # into hyphens, e.g. Family Name "Moxy Static" -> folder/slug "Moxy-Static".
 CONFIG      := premade-configs/config.moxy.yaml
+VF_CONFIG   := premade-configs/config.moxy-vf.yaml
 SOURCE_VF   := $(firstword $(wildcard font-data/Recursive_VF_*.ttf))
 FAMILY      := $(shell grep '^Family Name:' $(CONFIG) | sed 's/.*"\([^"]*\)".*/\1/')
 FAMILY_SLUG := $(shell echo '$(FAMILY)' | tr ' ' '-')
@@ -40,7 +41,7 @@ build:	## Build and install the static code fonts on Mac
 
 build-vf:	## Build the Moxy variable font (canonical; carries the lilx/ss13 revert toggles)
 	@echo "🔨 Building Moxy variable font..."
-	@venv/bin/python scripts/build-variable-font.py
+	@venv/bin/python scripts/build-variable-font.py $(VF_CONFIG) $(SOURCE_VF)
 	@echo "✅ Saved to fonts/Moxy-VF/ — install manually to use the toggles"
 	@echo "   ghostty: font-family = Moxy   (pristine Recursive: font-feature = lilx, ss13)"
 
