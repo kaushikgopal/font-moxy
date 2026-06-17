@@ -49,8 +49,6 @@ with:
 
 ## What's different from Recursive
 
-Compared to stock Recursive Mono Casual, Moxy changes these by default:
-
 <p align="center">
   <img src="images/comparison.png" alt="What's different from Recursive — parentheses, long arrows, connected bars, dashes, escape backslash, letterforms, and extra arrows compared side by side" width="100%">
 </p>

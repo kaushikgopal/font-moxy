@@ -30,7 +30,7 @@ ids:  0 1 f r L Z   <=  >=  ===  ->  =>       # letterforms
 
 ## comparison -> images/comparison.png
 
-- title: What's different from Recursive
+- title:
 
 | feature | sample |
 | --- | --- |

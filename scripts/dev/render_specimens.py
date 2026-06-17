@@ -138,16 +138,18 @@ def render_specimen(sec):
 def render_comparison(sec):
     title = sec["params"].get("title", "What's different from Recursive")
     rows = sec["rows"]
+    has_title = bool(title.strip())
 
     W = 1280
-    top, rh, lblx, colL, colR = 132, 70, 64, 470, 880
+    top, rh, lblx, colL, colR = (132 if has_title else 96), 70, 64, 470, 880
     H = top + rh * len(rows) + 40
     img = Image.new("RGB", (W * S, H * S), PAL["bg"])
     d = ImageDraw.Draw(img)
 
-    draw(d, (lblx, 40), title, moxy(34, 800), PAL["text"])
-    draw(d, (colL, 96), "Recursive", moxy(22, 600), PAL["muted"])
-    draw(d, (colR, 96), "Moxy", moxy(22, 700), PAL["yellow"])
+    if has_title:
+        draw(d, (lblx, 40), title, moxy(34, 800), PAL["text"])
+    draw(d, (colL, top - 36), "Recursive", moxy(22, 600), PAL["muted"])
+    draw(d, (colR, top - 36), "Moxy", moxy(22, 700), PAL["yellow"])
     d.line([(colR - 30) * S, top * S, (colR - 30) * S, (H - 30) * S], fill=PAL["dim"], width=S)
 
     rf, mf = rec(30, 430), moxy(30, 430)
