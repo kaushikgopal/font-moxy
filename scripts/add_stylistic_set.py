@@ -35,8 +35,16 @@ from borrow_glyphs import _measure_stroke, _match_source_weight
 from join_dashes import _sheared, _add_glyph, _single_sub_lookup
 
 # Characters that, following a backslash, mean it is acting as an escape.
-# C/JS escapes + regex classes + hex/unicode + octal/backrefs + backslash + quotes.
-DEFAULT_ESCAPE_CHARS = "abefnrtv" "dDwWsSB" "xuUN" "0123456789" "\\" "\"'"
+# C/JS escapes + regex classes/Unicode properties + hex/unicode + octal/backrefs +
+# regex metacharacters + delimiter + backslash + quotes.
+DEFAULT_ESCAPE_CHARS = (
+    "abefnrtv"          # C/JS escapes
+    "dDwWsSB"           # regex classes
+    "xuUNpP"            # hex/unicode/Unicode properties
+    "0123456789"        # octal/backrefs/numeric backrefs
+    "\\\"'"              # backslash, quotes
+    "[](){}?*+|^$./-"   # regex metacharacters + delimiter + hyphen
+)
 
 
 def _free_name_id(font) -> int:

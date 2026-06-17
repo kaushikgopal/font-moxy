@@ -20,10 +20,12 @@ Format:
 - tagline: a monospaced | coding font
 
 ```
-fn pipe(xs):  xs |> map(f) |> sum        # connected  |>
-[green]route:  start --------> end              # long arrows
-[peach]path = "C:\dev\moxy"  != none            # thin escape  \\
-[blue]ids:  0 1 f r L Z   <=  >=  ===  ->  =>   # letterforms
+fn pipe(xs):  xs |> map(f) |> sum             # connected  |>
+[green]contiguous lines: --------------------        # show as a single line
+[peach]route: -> --> ---> -----> <- <-- <--- <-----  # long arrows
+[blue]\n \r \o \t   r'\[(?:[^][]|\\[\[\]]|(?R))*\]' # thin escape  \\
+[blue]but not windows paths => "C:\dev\moxy"        #
+ids:  0 1 f r L Z   <=  >=  ===  ->  =>       # letterforms
 ```
 
 ## comparison -> images/comparison.png

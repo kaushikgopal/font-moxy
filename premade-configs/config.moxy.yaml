@@ -154,12 +154,15 @@ Add Characters:
 # borrows, these only apply when the feature tag is selected.
 #
 # Thin backslash (Lilex's glyph): a lighter \ — but, unlike Lilex, only when the
-# backslash serves as an escape (followed by an escape char like n t r b \ etc.),
-# never the 2nd of a consecutive pair (\\b -> thin + normal + b) and never a
-# Windows drive path (:\). Off by default; enable with ghostty `font-feature = ss03`.
-# Tag "ss03" matches Lilex and is free here because Recursive's own ss03
-# (Simplified f) is baked on via the frozen Features list below. NOTE: for the
-# variable-font build (features stay live) this must move to a conflict-free tag.
+# backslash serves as an escape. Escape chars include C/JS escapes (n t r b f v
+# a e x u U N), regex classes/properties (d D w W s S b B p P), octal/backrefs
+# (0-9), quotes, backslash itself, and regex metacharacters / delimiters
+# ([](){}?*+|^$./-). It is never the 2nd of a consecutive pair (\\b -> thin +
+# normal + b) and never a Windows drive path (:\). Off by default; enable with
+# ghostty `font-feature = ss03`. Tag "ss03" matches Lilex and is free here because
+# Recursive's own ss03 (Simplified f) is baked on via the frozen Features list
+# below. NOTE: for the variable-font build (features stay live) this must move to
+# a conflict-free tag.
 Stylistic Sets:
   - feature: ss03
     name: Thin backslash

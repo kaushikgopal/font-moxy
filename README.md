@@ -1,5 +1,3 @@
-# Moxy
-
 <p align="center">
   <img src="images/specimen.png" alt="Moxy — a monospaced coding font" width="100%">
 </p>

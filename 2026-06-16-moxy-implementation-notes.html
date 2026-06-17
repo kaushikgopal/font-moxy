@@ -233,5 +233,17 @@
   fonts on the next release.
 </div>
 
+<div class="entry"><span class="tag t-decision">resolved</span><time>2026-06-16 · thin escape backslash</time>
+  Expanded the escape-character coverage for the thin backslash so regex-heavy
+  code (and LaTeX / Markdown escapes) render consistently. The
+  <code>DEFAULT_ESCAPE_CHARS</code> list in <code>scripts/add_stylistic_set.py</code>
+  now includes regex metacharacters and delimiters (<code>[](){}?*+|^$./-</code>)
+  plus Unicode-property letters (<code>pP</code>). Verified with
+  <code>scripts/dev/probe_backslash.py</code> on the rebuilt VF + static fonts:
+  <code>r'\[(?:[^][]|\\[\[\]]|(?R))*\]'</code> now thins every escape backslash
+  and leaves only the escaped literal backslash in <code>\\</code> normal.
+  README specimen images regenerated to reflect the fix.
+</div>
+
 </body>
 </html>
