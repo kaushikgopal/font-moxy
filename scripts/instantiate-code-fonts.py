@@ -309,6 +309,15 @@ def splitFont(
                 f"from {os.path.basename(ssCfg['source'])}"
             )
 
+        # -------------------------------------------------------
+        # Moxy percent reshape. The static fonts ship via the cask (OFL), so the
+        # geometric reshape is used here (the grafts live in the variable-font
+        # build). This gives the static fonts a connected-style % without any
+        # non-OFL outlines.
+        from glyph_tweaks import reshape_percent_instance
+        reshape_percent_instance(monoFont, fontOptions["Fonts"][instance]["wght"])
+        print("\n\t• Reshaped percent (connected slash + corner dots)")
+
         # drop STAT table to allow RIBBI style naming & linking on Windows
         try:
             del monoFont["STAT"]

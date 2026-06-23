@@ -9,7 +9,7 @@ import uharfbuzz as hb
 from fontTools.ttLib import TTFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-VF = os.path.join(ROOT, "fonts", "Moxy-VF", "Moxy[MONO,CASL,wght,slnt,CRSV].ttf")
+VF = os.path.join(ROOT, "fonts", "Moxy-VF", "Moxy[CASL,wght,slnt,CRSV].ttf")
 
 # The raw string content (without the r prefix)
 text = r"\[(?:[^][]|\\[\[\]]|(?R))*\]"
@@ -46,8 +46,8 @@ def make_reporter(font_path, axes=None):
     return report
 
 
-# Variable font: default Moxy axes, thin backslash in default-on calt
-vf_report = make_reporter(VF, {"MONO": 1.0, "CASL": 0.5, "wght": 400.0, "slnt": 0.0, "CRSV": 0.0})
+# Variable font: default Moxy axes (pure-mono, no MONO axis), thin backslash in default-on calt
+vf_report = make_reporter(VF, {"CASL": 0.5, "wght": 400.0, "slnt": 0.0, "CRSV": 0.0})
 vf_report("VF with calt (default Moxy look)", {"calt": 1})
 vf_report("VF with calt + lilx (revert to Recursive)", {"calt": 1, "lilx": 1})
 

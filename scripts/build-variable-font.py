@@ -3,9 +3,10 @@ Build a variable-font source of "Moxy" from premade-configs/config.moxy-vf.yaml.
 
 This is separate from the static code-font build
 (scripts/instantiate-code-fonts.py + premade-configs/config.moxy.yaml), which
-instantiates fixed fonts and bakes the Lilex tweaks into ``calt``. The VF keeps all
-five Recursive axes (MONO/CASL/wght/slnt/CRSV) live, makes the Moxy choices the
-default, and exposes opt-in reverts.
+instantiates fixed fonts and bakes the Lilex tweaks into ``calt``. The VF keeps
+Recursive's CASL/wght/slnt/CRSV axes live, makes the Moxy choices the
+default, and exposes opt-in reverts. (Moxy is pure monospace: Recursive's MONO
+axis is pinned to Mono and dropped — see "Pure Mono" in the config.)
 
 Two revert bundles:
 
@@ -64,7 +65,7 @@ FAMILY = "Moxy"
 # distinct PostScript name so it can't silently clash with the static instances'
 # "Moxy-Regular" etc. if both are ever installed.
 PS_NAME = "Moxy-VF"
-DEFAULT_OUT = "fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf"
+DEFAULT_OUT = "fonts/Moxy-VF/Moxy[CASL,wght,slnt,CRSV].ttf"
 DEFAULT_AXIS_LOCATION = {"MONO": 1, "CASL": 0.5, "wght": 375}
 
 # OFL-1.1 license metadata baked into the name table (id 0/13/14), so the license
@@ -563,12 +564,15 @@ def add_semicasual_instances(font: TTFont, instances: list[dict] | None = None) 
         }
         for subfamily, wght, slnt, crsv in SEMICASUAL_INSTANCES
     ]
+    # Only coordinate axes that still exist on the font (Moxy is pure-mono: MONO
+    # is pinned away, so drop it from instance coordinates).
+    live_axes = {a.axisTag for a in font["fvar"].axes}
     for spec in configured:
         subfamily = spec["name"]
         coords = {
             tag: float(spec[tag])
             for tag in ("MONO", "CASL", "wght", "slnt", "CRSV")
-            if tag in spec
+            if tag in spec and tag in live_axes
         }
         # skip if an instance already sits at these exact coordinates
         if any(i.coordinates == coords for i in font["fvar"].instances):
@@ -604,7 +608,16 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     _ = font["gvar"]
     _ = font["HVAR"].table.AdvWidthMap.mapping
 
-    print(f"Renaming family -> '{FAMILY}' (all 5 axes kept)")
+    # ---- Moxy glyph tweaks, on the raw variable source -----------------------
+    # Done first, while each tweaked glyph still carries its full gvar, so the
+    # later MONO-pin + default-rebase re-normalise the result cleanly. The
+    # connected % and clean / are baked into Moxy (not configurable).
+    import glyph_tweaks
+    print("Applying glyph tweaks: percent, slash")
+    glyph_tweaks.graft_percent(font)
+    glyph_tweaks.graft_slash(font)
+
+    print(f"Renaming family -> '{FAMILY}'")
     rename_family(font, font_version(src_path))
 
     if KAUSH_SETS:
@@ -662,28 +675,35 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
             code_ligatures=options.get("Code Ligatures", True),
         )
 
-    # ---- make it mono-by-default ---------------------------------------------
-    # Move the fvar DEFAULT to Mono Casual Regular (MONO=1, CASL=0.5, wght=375)
-    # while keeping every axis at full range, so the bare font is a usable
-    # monospace in terminals (which render a VF's default instance). All axes stay
-    # reachable: set MONO=0 for Sans, CASL=1 for more casual, wght 300–1000, etc.
-    # Nothing is baked; only the default location moves (gvar re-based by instancer).
+    # ---- pure-mono + mono-by-default -----------------------------------------
+    # Moxy is a coding font, so MONO is PINNED to its default value (1, Mono) and
+    # the axis is dropped — there's no useful Sans (proportional) mode in a
+    # terminal, and baking MONO out removes ~half of Recursive's gvar deltas
+    # (≈28% smaller VF) plus the MONO-conditioned feature variations. The other
+    # axes are only REBASED (default moved, full range kept): CASL=0.5, wght=375,
+    # with slnt/CRSV still fully reachable. Set "Pure Mono: false" in the config to
+    # keep MONO live instead.
+    pure_mono = options.get("Pure Mono", True)
     axis_defaults = default_axis_location(options)
     if axis_defaults:
         from fontTools.varLib import instancer
-        axis_limits = {
-            axis.axisTag: (axis.minValue, float(axis_defaults[axis.axisTag]), axis.maxValue)
-            for axis in font["fvar"].axes
-            if axis.axisTag in axis_defaults
-        }
+        axis_limits = {}
+        for axis in font["fvar"].axes:
+            tag = axis.axisTag
+            if tag == "MONO" and pure_mono:
+                axis_limits["MONO"] = float(axis_defaults.get("MONO", 1))  # pin -> drop axis
+            elif tag in axis_defaults:
+                axis_limits[tag] = (axis.minValue, float(axis_defaults[tag]), axis.maxValue)
         instancer.instantiateVariableFont(
             font,
             axis_limits,
             inplace=True,
         )
         font.getReverseGlyphMap(rebuild=True)
+        kept = [a.axisTag for a in font["fvar"].axes]
+        pinned = " (MONO pinned=1, axis dropped)" if pure_mono else ""
         pretty = ", ".join(f"{tag}={value}" for tag, value in axis_defaults.items())
-        print(f"Re-based default -> {pretty}; all axes kept")
+        print(f"Re-based default -> {pretty}{pinned}; axes now {kept}")
 
     # ---- named instances at the Mono Semicasual (CASL=0.5) use points ---------
     # Recursive's inherited named instances only sit at CASL 0/1 and MONO 0/1, so
@@ -692,6 +712,19 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     # Add exact named instances at MONO=1, CASL=0.5 (incl. the default) so those
     # render correctly. Additive: the CASL 0/1 instances stay, so those keep working.
     add_semicasual_instances(font, options.get("Named Instances"))
+
+    # ---- advertise true monospace --------------------------------------------
+    # With MONO pinned to Mono, every glyph is the 600-unit cell at every axis
+    # location, so Moxy is genuinely fixed-pitch now. Flag it (post.isFixedPitch +
+    # OS/2 Panose bProportion=Monospaced + xAvgCharWidth=600) so terminals and
+    # editors that gate on these detect Moxy as a monospace font. (The static
+    # build already sets these per instance; the VF couldn't truthfully claim it
+    # while the Sans end of MONO was reachable.)
+    if options.get("Pure Mono", True):
+        font["post"].isFixedPitch = 1
+        font["OS/2"].panose.bProportion = 9  # 9 = Monospaced
+        font["OS/2"].xAvgCharWidth = 600
+        print("  • flagged true monospace (isFixedPitch, Panose, xAvgCharWidth=600)")
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     font.save(out_path)

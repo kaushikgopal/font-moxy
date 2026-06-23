@@ -16,13 +16,23 @@ Version: "1"
 
 Source VF: "font-data/Recursive_VF_1.085.ttf"
 Lilex VF: "font-data/Lilex[wght].ttf"
-Output Path: "fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf"
+Output Path: "fonts/Moxy-VF/Moxy[CASL,wght,slnt,CRSV].ttf"
+
+# -----------------------------------------------------------------------------
+# Pure monospace
+#
+# Moxy is a coding font, so the MONO axis is pinned to Mono (1) and dropped — a
+# proportional/Sans mode is useless in a terminal, and baking MONO out removes
+# ~half of Recursive's gvar deltas (≈28% smaller VF). Set to false to keep the
+# MONO axis live (0=Sans … 1=Mono).
+Pure Mono: true
 
 # -----------------------------------------------------------------------------
 # Variable default
 #
-# The VF keeps each axis range, but moves the default point so plain `Moxy` is a
-# mono semicasual regular. Omit an axis to keep Recursive's source default.
+# The VF keeps each remaining axis range, but moves the default point so plain
+# `Moxy` is a mono semicasual regular. Omit an axis to keep Recursive's source
+# default. (MONO is pinned per "Pure Mono" above, not a live default here.)
 
 Default Axis Location:
   MONO: 1
@@ -31,17 +41,18 @@ Default Axis Location:
 
 # Extra named instances at CASL=0.5 keep macOS CoreText from snapping the default
 # and semicasual use-points to Recursive's CASL=0 or CASL=1 named instances.
+# (MONO is dropped from these automatically once the axis is pinned away.)
 Named Instances:
-  - { name: Light, MONO: 1, CASL: 0.5, wght: 300, slnt: 0, CRSV: 0.5 }
-  - { name: Regular, MONO: 1, CASL: 0.5, wght: 375, slnt: 0, CRSV: 0.5 }
-  - { name: Medium, MONO: 1, CASL: 0.5, wght: 500, slnt: 0, CRSV: 0.5 }
-  - { name: Bold, MONO: 1, CASL: 0.5, wght: 700, slnt: 0, CRSV: 0.5 }
-  - { name: Black, MONO: 1, CASL: 0.5, wght: 900, slnt: 0, CRSV: 0.5 }
-  - { name: Light Italic, MONO: 1, CASL: 0.5, wght: 300, slnt: -15, CRSV: 0.5 }
-  - { name: Italic, MONO: 1, CASL: 0.5, wght: 375, slnt: -15, CRSV: 0.5 }
-  - { name: Medium Italic, MONO: 1, CASL: 0.5, wght: 500, slnt: -15, CRSV: 0.5 }
-  - { name: Bold Italic, MONO: 1, CASL: 0.5, wght: 700, slnt: -15, CRSV: 0.5 }
-  - { name: Black Italic, MONO: 1, CASL: 0.5, wght: 900, slnt: -15, CRSV: 0.5 }
+  - { name: Light, CASL: 0.5, wght: 300, slnt: 0, CRSV: 0.5 }
+  - { name: Regular, CASL: 0.5, wght: 375, slnt: 0, CRSV: 0.5 }
+  - { name: Medium, CASL: 0.5, wght: 500, slnt: 0, CRSV: 0.5 }
+  - { name: Bold, CASL: 0.5, wght: 700, slnt: 0, CRSV: 0.5 }
+  - { name: Black, CASL: 0.5, wght: 900, slnt: 0, CRSV: 0.5 }
+  - { name: Light Italic, CASL: 0.5, wght: 300, slnt: -15, CRSV: 0.5 }
+  - { name: Italic, CASL: 0.5, wght: 375, slnt: -15, CRSV: 0.5 }
+  - { name: Medium Italic, CASL: 0.5, wght: 500, slnt: -15, CRSV: 0.5 }
+  - { name: Bold Italic, CASL: 0.5, wght: 700, slnt: -15, CRSV: 0.5 }
+  - { name: Black Italic, CASL: 0.5, wght: 900, slnt: -15, CRSV: 0.5 }
 
 # -----------------------------------------------------------------------------
 # Font features from Recursive

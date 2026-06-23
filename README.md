@@ -2,10 +2,8 @@
   <img src="images/specimen.png" alt="Moxy — a monospaced coding font" width="100%">
 </p>
 
-**Moxy** is a monospaced\* coding font that is ultra legible and has flair. One
+**Moxy** is a monospaced coding font that is ultra legible and has flair. One
 might even say it has ... character.
-
-`*` - it's monospaced only by default but can be feature set to be a Sans font.
 
 It's built on the bones of [Recursive](https://www.recursive.design/) with a few
 specific choices around alternative characters. It then folds in a handful of
@@ -75,8 +73,9 @@ font-feature = lilx, ss13
 
 ## Everything else is Recursive
 
-Moxy inherits Recursive's design and its five variable axes (Monospace, Casual,
-Weight, Slant, Cursive) in the variable font. For the full story on Recursive,
+Moxy inherits Recursive's design. It's a pure monospace font, so Recursive's
+Monospace axis is locked to Mono and dropped; the variable font keeps the other
+four axes (Casual, Weight, Slant, Cursive). For the full story on Recursive,
 see [recursive.design](https://www.recursive.design/).
 
 ## Build / customize from source

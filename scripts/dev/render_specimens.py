@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SPEC = os.path.join(ROOT, "images/branding/specimens.md")
-MOXY = os.path.join(ROOT, "fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf")
+MOXY = os.path.join(ROOT, "fonts/Moxy-VF/Moxy[CASL,wght,slnt,CRSV].ttf")
 REC = os.path.join(ROOT, "font-data/Recursive_VF_1.085.ttf")
 S = 2  # supersample, then downscale for crisp anti-aliasing
 
@@ -84,7 +84,9 @@ def font(path, px, axes):
     return f
 
 def moxy(px, wght=400, mono=1, casl=0.5, slnt=0, crsv=0):
-    return font(MOXY, px, [mono, casl, wght, slnt, crsv])
+    # Moxy is pure-mono: the MONO axis is gone (always Mono). `mono` is accepted
+    # for backward-compat but ignored; axis order is now CASL, wght, slnt, CRSV.
+    return font(MOXY, px, [casl, wght, slnt, crsv])
 def rec(px, wght=400):   return font(REC, px, [1, 0.5, wght, 0, 0])
 
 def draw(d, xy, s, f, fill, feats=("calt",)):

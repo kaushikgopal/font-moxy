@@ -50,7 +50,7 @@ This produces `Moxy-{Regular,Italic,Semibold,SemiboldItalic,Bold,BoldItalic,Blac
 ## Build the variable font (the canonical Moxy, with toggles)
 
 ```bash
-make build-vf   # builds fonts/Moxy-VF/Moxy[MONO,CASL,wght,slnt,CRSV].ttf
+make build-vf   # builds fonts/Moxy-VF/Moxy[CASL,wght,slnt,CRSV].ttf
 ```
 
 or directly:
@@ -83,8 +83,10 @@ How the variable font is wired (see `scripts/vf_invert.py` for the details):
 - The feature tags are **reverts**: `lilx` undoes the Lilex tweaks, `ss13`
   ("Alt. Recursive choices") undoes the five letterforms, and `ss03/06/08/10/11`
   undo one letter each. The 12 added arrows and the long-arrow fix are always on.
-- Letterform reverts are tuned to the canonical `MONO=1` (Mono) default; reverting at
-  `MONO=0` (Sans) restores the mono letter shapes.
+- Moxy is **pure monospace**: Recursive's `MONO` axis is pinned to Mono (1) and
+  dropped (see `Pure Mono` in `config.moxy-vf.yaml`), so the VF carries four axes
+  (CASL, wght, slnt, CRSV). This also bakes out ~half of Recursive's `gvar`
+  deltas (≈28% smaller VF) and lets the font honestly flag itself fixed-pitch.
 
 ## Tweak which features are baked into the static fonts
 
@@ -146,6 +148,7 @@ git pull upstream main
   `scripts/dev/render_specimens.py` (needs `Pillow`): rebuild the fonts, then
   `venv/bin/python scripts/dev/render_specimens.py` writes `images/specimen.png`
   and `images/comparison.png`.
-- The variable font carries all five Recursive axes (Monospace, Casual, Weight,
-  Slant, Cursive); its default instance is Mono Casual Regular so the bare font is a
-  usable terminal monospace.
+- The variable font carries four axes (Casual, Weight, Slant, Cursive) — Moxy is
+  pure monospace, so Recursive's Monospace axis is pinned to Mono and dropped. Its
+  default instance is Mono Casual Regular, so the bare font is a usable terminal
+  monospace.

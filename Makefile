@@ -10,6 +10,7 @@ SOURCE_VF   := $(firstword $(wildcard font-data/Recursive_VF_*.ttf))
 FAMILY      := $(shell grep '^Family Name:' $(CONFIG) | sed 's/.*"\([^"]*\)".*/\1/')
 FAMILY_SLUG := $(shell echo '$(FAMILY)' | tr ' ' '-')
 FONT_DIR    := fonts/$(FAMILY_SLUG)
+VF_OUT      := $(shell grep '^Output Path:' $(VF_CONFIG) | sed 's/.*"\([^"]*\)".*/\1/')
 
 help:		## List all available commands with descriptions
 	@awk -F'##' '/^[a-zA-Z0-9_-]+:.*##/ {gsub(/:.*/, ":\t\t", $$1); printf "%s%s\n", $$1, $$2}' $(MAKEFILE_LIST) | \
@@ -44,6 +45,16 @@ build-vf:	## Build the Moxy variable font (canonical; carries the lilx/ss13 reve
 	@venv/bin/python scripts/build-variable-font.py $(VF_CONFIG) $(SOURCE_VF)
 	@echo "✅ Saved to fonts/Moxy-VF/ — install manually to use the toggles"
 	@echo "   ghostty: font-family = Moxy   (pristine Recursive: font-feature = lilx, ss13)"
+
+install-vf:	## Build the Moxy variable font AND (re)install it to ~/Library/Fonts
+	@echo "🔨 Building Moxy variable font..."
+	@venv/bin/python scripts/build-variable-font.py $(VF_CONFIG) $(SOURCE_VF)
+	@NAME=$$(basename "$(VF_OUT)"); \
+		echo "❌ removing ALL previously installed Moxy VFs (any axis tag) ..."; \
+		rm -f "$$HOME"/Library/Fonts/Moxy\[*\].ttf 2>/dev/null || true; \
+		echo "✅ installing $$NAME to ~/Library/Fonts ..."; \
+		cp "$(VF_OUT)" "$$HOME/Library/Fonts/$$NAME"
+	@echo "   set font-family = Moxy in your terminal/editor, then reload it"
 
 # === Branding ===
 
