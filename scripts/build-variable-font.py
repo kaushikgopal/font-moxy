@@ -613,9 +613,10 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     # later MONO-pin + default-rebase re-normalise the result cleanly. The
     # connected % and clean / are baked into Moxy (not configurable).
     import glyph_tweaks
-    print("Applying glyph tweaks: percent, slash")
+    print("Applying glyph tweaks: percent, slash, backslash")
     glyph_tweaks.graft_percent(font)
     glyph_tweaks.graft_slash(font)
+    glyph_tweaks.graft_backslash(font)
 
     print(f"Renaming family -> '{FAMILY}'")
     rename_family(font, font_version(src_path))

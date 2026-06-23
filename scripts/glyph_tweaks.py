@@ -413,3 +413,13 @@ def graft_percent(font):
 def graft_slash(font):
     """Replace ``/`` with Moxy's clean straight slash (no brushy flair)."""
     _graft_glyph_variable(font, "slash", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
+
+
+def graft_backslash(font):
+    """Replace ``\\`` with Moxy's clean straight backslash (no brushy flair).
+
+    All composites (backslash.code, .case, and the \\b \\n \\r \\t \\v escape
+    ligatures) reference ``backslash`` as a component, so they inherit this
+    automatically.
+    """
+    _graft_glyph_variable(font, "backslash", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
