@@ -7,16 +7,18 @@ plus a set of scripts that graft in the Lilex tweaks. There are two artifacts:
   `scripts/instantiate-code-fonts.py` from `premade-configs/config.moxy.yaml`.
   **This is what the homebrew cask ships.** The look is frozen per the config; there
   are no runtime toggles.
-- **Variable font** (`fonts/Moxy-VF/`) — one 5-axis file built by
-  `scripts/build-variable-font.py` from `premade-configs/config.moxy-vf.yaml`. This
-  is the canonical Moxy: it defaults to the Moxy look and exposes the `lilx` /
-  `ss13` / `ssNN` reverts. Install it yourself if you want the toggles; it is not
-  part of the cask.
+- **Variable font** (`fonts/Moxy-VF/`) — one 4-axis file built by
+  `scripts/build-variable-font.py` from `premade-configs/config.moxy-vf.yaml`. It
+  stays close to Recursive: Recursive's own feature tags mean what they mean in
+  Recursive, and Moxy adds two forward opt-in toggles — `moxy` (letterform bundle)
+  and `lilx` (Lilex borrowings). Install it yourself if you want the toggles; it
+  is not part of the cask.
 
-> **Static vs variable, plainly:** the shipped static font has the Moxy look baked
-> in with **no** way back to Recursive. The variable font has the same default look
-> **plus** the revert toggles. (Generating the static styles directly from the
-> variable font is a possible future step; today they're built independently.)
+> **Static vs variable, plainly:** the shipped static font has the full Moxy look
+> baked in with **no** toggles. The variable font defaults to Recursive's look;
+> enable `font-feature = moxy, lilx` for the full Moxy look. (Generating the
+> static styles directly from the variable font is a possible future step; today
+> they're built independently.)
 
 ## Setup
 
@@ -70,21 +72,29 @@ Install that `.ttf` manually to use the toggles. In Ghostty:
 
 ```ini
 font-family = Moxy
-# default = Moxy look; to get plain Recursive:
-# font-feature = lilx, ss13
+# bare = close to Recursive; full Moxy look:
+# font-feature = moxy, lilx
 ```
 
-How the variable font is wired (see `scripts/vf_invert.py` for the details):
+How the variable font is wired (see `scripts/build-variable-font.py` for the
+details):
 
-- The customized "Moxy" look is the **default** — curvy parens and the added arrows
-  live in the `cmap`; connected dashes/bars, the thin escape backslash, the
-  simplified letterforms, the titling `Q`, Recursive's own code ligatures, and the
-  long-arrow fix all live in a default-on `calt` feature.
-- The feature tags are **reverts**: `lilx` undoes the Lilex tweaks, `ss13`
-  ("Alt. Recursive choices") undoes the bundled letterforms (`ss02/03/06/09/10/11`
-  — single-story `g`, simplified `f r 6 9 0 1`), and each `ssNN` undoes one letter;
-  `titl` swaps the fancy `Q` back to Recursive's plain `Q`. The 12 added arrows and
-  the long-arrow fix are always on.
+- The bare VF is **close to Recursive** — Recursive's own feature tags
+  (`ssNN`, `titl`, `dlig`, …) mean exactly what they mean in Recursive and are
+  opt-in the same way. The bare font renders Recursive's letterforms and
+  Recursive's native parens/dashes/backslash.
+- Two forward opt-in features are added on top:
+  - `moxy` — bundles Recursive's `ss02 ss03 ss06 ss09 ss10 ss11 titl` lookups,
+    so one toggle gives the Moxy letterform set (single-story `g`, simplified
+    `f r 6 9 1`, dotted `0`, fancy long-tail `Q`). Each member also stays
+    independently available under its own tag.
+  - `lilx` — the Lilex borrowings: curvy parens (cv13), connected dashes/bars
+    (cv11), a thin escape-only backslash.
+- Always-on (not behind any toggle): the 12 added single-char arrows (cmap'd
+  straight), the Recursive-style long-arrow fix (`--->`, `<--`, …, any length)
+  in a default-on `calt`, the connected `%`, the clean `/`, pure-mono, and the
+  axis rebase. Recursive's own code ligatures stay in `dlig` (opt-in, same as
+  Recursive).
 - Moxy is **pure monospace**: Recursive's `MONO` axis is pinned to Mono (1) and
   dropped (see `Pure Mono` in `config.moxy-vf.yaml`), so the VF carries four axes
   (CASL, wght, slnt, CRSV). This also bakes out ~half of Recursive's `gvar`
@@ -112,9 +122,10 @@ venv/bin/python scripts/instantiate-code-fonts.py premade-configs/<your-config>.
 
 ## Tweak the variable font recipe
 
-Edit `premade-configs/config.moxy-vf.yaml`. It controls the VF family/output names,
-the default axis location, the `ss13` Recursive-choice bundle, code ligatures, long
-arrows, and the Lilex-derived glyph tweaks used before the defaults are inverted.
+Edit `premade-configs/config.moxy-vf.yaml`. It controls the VF family/output
+names, the default axis location, the `moxy` letterform bundle (which Recursive
+`ssNN`/`titl` tags it turns on), code ligatures, long arrows, and the
+Lilex-derived glyph tweaks behind `lilx`.
 
 ## Cut a release
 
@@ -127,8 +138,8 @@ and updates the homebrew cask `font-moxy.rb`. The release version comes from
 
 1. Drop the latest `Recursive_VF_1.0xx.ttf` into `font-data/` and delete the old one.
 2. Rebuild (`make build`, `make build-vf`).
-3. Re-run the variable-font verification — the `ss13` revert reuses Recursive's own
-   lookup indices, so confirm them after an upstream bump.
+3. Re-run the variable-font verification — the `moxy` bundle reuses Recursive's
+   own `ssNN`/`titl` lookup indices, so confirm them after an upstream bump.
 
 ## Syncing with upstream Recursive tooling
 
@@ -153,5 +164,5 @@ git pull upstream main
   and `images/comparison.png`.
 - The variable font carries four axes (Casual, Weight, Slant, Cursive) — Moxy is
   pure monospace, so Recursive's Monospace axis is pinned to Mono and dropped. Its
-  default instance is Mono Linear Regular (CASL=0), so the bare font is a usable
-  terminal monospace.
+  default instance is Mono Linear Regular (CASL=0); the bare font renders
+  Recursive's letterforms (enable `moxy` for the Moxy letterform set).

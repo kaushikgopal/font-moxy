@@ -385,7 +385,7 @@ def add_feature(
     """Append a FeatureRecord wired into every langsys of every script.
 
     If `ui_name` is given, attach FeatureParamsStylisticSet with a macOS UI name
-    (used for registered stylistic sets like ss13 "Kaush's preferences").
+    (used for registered stylistic sets, e.g. if a UI name is desired).
     Returns the new feature index.
     """
     gsub = font["GSUB"].table

@@ -51,21 +51,22 @@ with:
   <img src="images/comparison.png" alt="What's different from Recursive — parentheses, long arrows, connected bars, dashes, escape backslash, letterforms, and extra arrows compared side by side" width="100%">
 </p>
 
-The **variable font** (see [CUSTOMIZING.md](CUSTOMIZING.md)) additionally lets
-you dial these back toward Recursive with opt-in features:
+The **variable font** (see [CUSTOMIZING.md](CUSTOMIZING.md)) stays close to
+Recursive — Recursive's own feature tags (`ssNN`, `titl`, `dlig`, …) mean what
+they mean in Recursive, opt-in the same way. Moxy adds two forward opt-in
+features on top:
 
-- `lilx` — turn **off** the Lilex tweaks (parens, connected dashes/bars, thin
-  backslash) and get Recursive's shapes back.
-- `ss13` — "Alt. Recursive choices": restore Recursive's `g f r 6 9 0 1`.
-- `ss02 / ss03 / ss06 / ss09 / ss10 / ss11` — restore one letterform at a time.
-- `titl` — swap the fancy long-tail `Q` back to Recursive's plain `Q`.
-
-Enabling `lilx` **and** `ss13` returns the (revertible) glyphs to pristine
-Recursive. In Ghostty:
+- `moxy` — turn **on** the Moxy letterform set: single-story `g`, simplified
+  `f r 6 9 1`, dotted `0`, fancy long-tail `Q`.
+- `lilx` — turn **on** the Lilex borrowings: curvy parens, connected
+  dashes/bars, thin escape backslash.
+- `ss02 / ss03 / ss06 / ss09 / ss10 / ss11 / titl` — enable one letterform at
+  a time (these compose with `moxy`).
 
 ```ini
-# plain Recursive look from the Moxy variable font
-font-feature = lilx, ss13
+# full Moxy look from the Moxy variable font
+font-feature = moxy, lilx
+# plain Recursive = bare font (no features)
 ```
 
 > The added arrow characters and the long-arrow fix are additive and always on.

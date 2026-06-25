@@ -40,11 +40,11 @@ build:	## Build and install the static code fonts on Mac
 	@echo "✅ Installing $(FAMILY) fonts on Mac..."
 	@cp $(FONT_DIR)/*.ttf ~/Library/Fonts/
 
-build-vf:	## Build the Moxy variable font (canonical; carries the lilx/ss13 revert toggles)
+build-vf:	## Build the Moxy variable font (close to Recursive; moxy/lilx opt-in toggles)
 	@echo "🔨 Building Moxy variable font..."
 	@venv/bin/python scripts/build-variable-font.py $(VF_CONFIG) $(SOURCE_VF)
 	@echo "✅ Saved to fonts/Moxy-VF/ — install manually to use the toggles"
-	@echo "   ghostty: font-family = Moxy   (pristine Recursive: font-feature = lilx, ss13)"
+	@echo "   ghostty: font-family = Moxy   (full Moxy: font-feature = moxy, lilx)"
 
 install-vf:	## Build the Moxy variable font AND (re)install it to ~/Library/Fonts
 	@echo "🔨 Building Moxy variable font..."

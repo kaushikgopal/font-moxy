@@ -1,9 +1,25 @@
 # Moxy — agent notes
 
-Moxy is built on Recursive + Lilex. The build INVERTS Recursive's feature
-meanings, so **state the desired LOOK, never the feature tag** — "ss08" in
-Recursive means *no-serif* L&Z, and Moxy had it default-on, so "apply ss08
-for serif L&Z" is backwards. Say "I want serif L&Z" and let the agent map it.
+Moxy is built on Recursive + Lilex. The **variable font** stays close to
+Recursive: Recursive's own feature tags (`ssNN`, `titl`, `dlig`, …) mean exactly
+what they mean in Recursive and are opt-in the same way. Moxy adds two forward
+opt-in features on top: `moxy` (letterform bundle) and `lilx` (Lilex borrowings).
+The **static fonts** (what the homebrew cask ships) bake the full Moxy look in
+with no toggles.
+
+## The two VF toggles (both forward, opt-in)
+
+| Feature | What it turns ON | Default |
+|---|---|---|
+| `moxy` | Recursive letterform set: single-story `g`, simp `f`/`r`/`6`/`9`/`1`, dotted `0`, fancy long-tail `Q` (bundles `ss02 ss03 ss06 ss09 ss10 ss11 titl`) | off |
+| `lilx` | Lilex borrowings: curvy parens, connected dashes/bars, thin escape backslash | off |
+
+- **Full Moxy look**: `font-feature = moxy, lilx`
+- **Plain Recursive**: bare font (no features)
+- Each `ssNN`/`titl` stays independently available too (they compose with `moxy`).
+
+Always-on (not behind any toggle): 12 added arrows, long-arrow fix, connected
+`%`, clean `/`, pure-mono, axis rebase.
 
 ## Requesting a default change
 
@@ -15,31 +31,31 @@ Three scopes — say which:
 
 ## Glyph defaults — say the look, this is the action
 
-| Glyph(s) | Desired look | Recursive feature | Moxy action (add to / remove from `Features:`) |
-|---|---|---|---|
-| g | single-story | `ss02` | add `ss02` |
-| L, Z | serifed (Recursive default) | — | ensure `ss08` is NOT listed |
-| L, Z | serifless | `ss08` | add `ss08` |
-| f | simplified | `ss03` | add `ss03` |
-| r | simplified | `ss06` | add `ss06` |
-| 6, 9 | simplified | `ss09` | add `ss09` |
-| 0 | dotted | `ss10` | add `ss10` |
-| 1 | simplified | `ss11` | add `ss11` |
-| a | single-story | `ss01` | add `ss01` |
-| @ | simplified | `ss12` | add `ss12` |
-| Q | fancy long-tail (titling) | `titl` | VF: add to `Extra Features:`; static: add to `Features:` |
+| Glyph(s) | Desired look | Recursive feature | VF action | Static action |
+|---|---|---|---|---|
+| g | single-story | `ss02` | add `ss02` to `Moxy Bundle:` | add `ss02` to `Features:` |
+| L, Z | serifed (Recursive default) | — | ensure `ss08` is NOT in `Moxy Bundle:` | remove `ss08` from `Features:` |
+| L, Z | serifless | `ss08` | add `ss08` to `Moxy Bundle:` | add `ss08` to `Features:` |
+| f | simplified | `ss03` | add `ss03` to `Moxy Bundle:` | add `ss03` to `Features:` |
+| r | simplified | `ss06` | add `ss06` to `Moxy Bundle:` | add `ss06` to `Features:` |
+| 6, 9 | simplified | `ss09` | add `ss09` to `Moxy Bundle:` | add `ss09` to `Features:` |
+| 0 | dotted | `ss10` | add `ss10` to `Moxy Bundle:` | add `ss10` to `Features:` |
+| 1 | simplified | `ss11` | add `ss11` to `Moxy Bundle:` | add `ss11` to `Features:` |
+| a | single-story | `ss01` | add `ss01` to `Moxy Bundle:` | add `ss01` to `Features:` |
+| @ | simplified | `ss12` | add `ss12` to `Moxy Bundle:` | add `ss12` to `Features:` |
+| Q | fancy long-tail (titling) | `titl` | add `titl` to `Moxy Bundle:` | add `titl` to `Features:` |
 
-To REVERT a Moxy default back to Recursive: remove the row from `Features:`.
+To REVERT a Moxy default back to Recursive: remove the row from `Moxy Bundle:`
+(VF) or `Features:` (static).
 
 Notes:
 - `ss04` (simp i), `ss05` (simp l), `ss07` (italic diagonals) exist but are
   broken upstream (Recursive issue #4) — avoid unless confirmed fixed.
-- `titl` is the only non-ssNN tag today; in the VF it gets its own revert
-  toggle (NOT part of the `ss13` bundle). Other non-ssNN single-sub features
-  would use the same `Extra Features:` path.
-- In the VF, `ss13` = "revert ALL bundled ssNN at once." The bundle is
-  whatever is listed in `Features:`. So adding/removing an ssNN there also
-  adds/removes it from the ss13 revert.
+- In the VF, `moxy` bundles whatever is listed in `Moxy Bundle:`. Adding/removing
+  a tag there changes what `moxy` turns on. Each tag also stays independently
+  available under its own name.
+- In the static build, `Features:` freezes Recursive source features into the
+  output (baked into `calt` via `freeze_features`). `titl` works here too.
 
 ## Axis defaults
 
@@ -58,8 +74,7 @@ Notes:
 ## Verifying after a change
 
 Shape-check the built font with HarfBuzz to confirm a glyph's default and its
-revert behave as intended (see the session anchored at `cff7ffb` for a worked
-example). The pattern:
+toggle behave as intended. The pattern:
 
 ```python
 import uharfbuzz as hb
@@ -71,5 +86,5 @@ def shape(t, feat=None):
     b = hb.Buffer(); b.add_utf8(t.encode()); b.guess_segment_properties()
     hb.shape(hf, b, feat or {})
     return [font.getGlyphName(g.codepoint) for g in b.glyph_infos]
-# default vs +ss13 / +titl / +ssNN
+# bare vs +moxy / +lilx / +moxy,+lilx / +ssNN
 ```

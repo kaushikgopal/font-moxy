@@ -3,26 +3,28 @@ Build a variable-font source of "Moxy" from premade-configs/config.moxy-vf.yaml.
 
 This is separate from the static code-font build
 (scripts/instantiate-code-fonts.py + premade-configs/config.moxy.yaml), which
-instantiates fixed fonts and bakes the Lilex tweaks into ``calt``. The VF keeps
-Recursive's CASL/wght/slnt/CRSV axes live, makes the Moxy choices the
-default, and exposes opt-in reverts. (Moxy is pure monospace: Recursive's MONO
-axis is pinned to Mono and dropped — see "Pure Mono" in the config.)
+instantiates fixed fonts and bakes the Moxy look into ``calt``. The VF keeps
+Recursive's CASL/wght/slnt/CRSV axes live and stays close to Recursive:
+Recursive's own feature tags (ssNN, titl, dlig, …) mean exactly what they mean
+in Recursive and are opt-in the same way. Moxy adds two forward opt-in features
+on top. (Moxy is pure monospace: Recursive's MONO axis is pinned to Mono and
+dropped — see "Pure Mono" in the config.)
 
-Two revert bundles:
+Two forward opt-in features:
 
-  * ``lilx`` (custom 4-char feature tag) — the ported-from-Lilex tweaks only:
-    curvy parens (Lilex cv13), connected dashes, connected bars (Lilex cv11),
-    a thin escape-only backslash, and the 12 added single-char arrows.
-  * ``ss13`` (registered stylistic set, UI name "Kaush's preferences") — whose
-    feature references Recursive's OWN ss02/ss03/ss06/ss09/ss10/ss11 lookups, so
-    one toggle applies single-story g / Simplified f / Simplified r / Simplified
-    6&9 / dotted 0 / simplified 1 together.
-  * ``titl`` — Recursive's titling Q (Q→Q.titl) becomes the Moxy default;
-    enabling ``titl`` reverts to Recursive's plain Q. (Separate from ``ss13``.)
+  * ``moxy`` (custom 4-char feature tag) — bundles Recursive's own
+    ss02/ss03/ss06/ss09/ss10/ss11/titl lookups, so one toggle applies the Moxy
+    letterform set: single-story g, simplified f/r/6/9/1, dotted 0, fancy Q.
+    Each member also stays independently available under its own tag.
+  * ``lilx`` (custom 4-char feature tag) — the ported-from-Lilex tweaks:
+    curvy parens (cv13), connected dashes, connected bars (cv11), a thin
+    escape-only backslash. Off by default; enabling it adds the Lilex look.
 
-Plus a DEFAULT calt fix: Recursive-style long arrows (--->, <--, …) built from
-Recursive's own arrow geometry (native height), because the default font has no
-connected-dash shaft.
+Always-on (not behind any toggle): the 12 added single-char arrows (cmap'd
+straight), the Recursive-style long-arrow fix (--->, <--, …, any length) in a
+default-on ``calt``, the connected %, the clean /, pure-mono, and the axis
+rebase. Recursive's own code ligatures stay in ``dlig`` (opt-in, same as
+Recursive).
 
 Usage:
     venv/bin/python scripts/build-variable-font.py \
@@ -34,7 +36,6 @@ distribution.
 
 from __future__ import annotations
 
-import copy
 import glob
 import os
 import re
@@ -84,12 +85,10 @@ LICENSE_DESC = (
 )
 LICENSE_URL = "https://openfontlicense.org"
 
-# Recursive's own stylistic sets the user prefers, bundled under "Kaush's prefs":
-#   ss02 single-story g, ss03 Simplified f, ss06 Simplified r, ss09 Simplified 6&9,
-#   ss10 dotted 0, ss11 simplified 1.
-# Non-ssNN tags inverted the same way but NOT bundled into ss13 (e.g. titl).
-KAUSH_SETS = ["ss02", "ss03", "ss06", "ss09", "ss10", "ss11"]
-EXTRA_INVERT_TAGS: list[str] = []
+# Recursive source features bundled under the forward `moxy` toggle (one switch
+# for the full Moxy letterform set). Each member also stays independently
+# available under its own tag.
+MOXY_BUNDLE = ["ss02", "ss03", "ss06", "ss09", "ss10", "ss11", "titl"]
 
 
 def load_config(config_path: str) -> dict:
@@ -108,14 +107,13 @@ def font_version(src_path: str) -> str:
 
 
 def configure_globals(options: dict) -> None:
-    global FAMILY, PS_NAME, LILEX_VF, KAUSH_SETS, EXTRA_INVERT_TAGS, ARROW_GLYPHS
+    global FAMILY, PS_NAME, LILEX_VF, MOXY_BUNDLE, ARROW_GLYPHS
 
     FAMILY = options.get("Family Name", FAMILY)
     PS_NAME = options.get("PostScript Name", PS_NAME)
     LILEX_VF = options.get("Lilex VF", LILEX_VF)
-    if "Features" in options:
-        KAUSH_SETS = list(options.get("Features") or [])
-    EXTRA_INVERT_TAGS = list(options.get("Extra Features") or [])
+    if "Moxy Bundle" in options:
+        MOXY_BUNDLE = list(options.get("Moxy Bundle") or [])
 
     add_chars = options.get("Add Characters") or {}
     if add_chars.get("source"):
@@ -167,25 +165,20 @@ def rename_family(font: TTFont, source_version: str) -> None:
 
 
 # ----------------------------------------------------------------------------
-# "Kaush's preferences" — a registered stylistic set bundling Recursive's own
-# ss03/06/08/10/11 lookups behind one toggle.
+# "moxy" — a custom 4-char feature bundling Recursive's own ssNN + titl lookups
+# behind one forward opt-in toggle. Enabling `moxy` applies the full Moxy
+# letterform set (single-story g, simplified f/r/6/9/1, dotted 0, fancy Q).
+# Each member also stays independently available under its own ssNN / titl tag.
 
 
-def add_kaush_preferences(font: TTFont) -> None:
-    # NOTE: invert_defaults() later REPLACES these forward lookups with the
-    # reverse (Recursive-restoring) ones; the UI name reflects the inverted
-    # meaning ("Alt. Recursive choices" = opt the five letterforms back to
-    # Recursive). We register the feature here so the name record + langsys
-    # wiring already exist.
-    lookups = feature_lookup_indices(font, KAUSH_SETS)
+def add_moxy_feature(font: TTFont) -> None:
+    lookups = feature_lookup_indices(font, MOXY_BUNDLE)
     add_feature(
         font,
-        feature_tag="ss13",
+        feature_tag="moxy",
         lookup_indices=lookups,
-        ui_name="Alt. Recursive choices",
     )
-    print(f"  • ss13 'Alt. Recursive choices' -> (pre-inversion) lookups {lookups} "
-          f"({'/'.join(KAUSH_SETS)})")
+    print(f"  • moxy -> lookups {lookups} ({'/'.join(MOXY_BUNDLE)})")
 
 
 # ----------------------------------------------------------------------------
@@ -386,8 +379,8 @@ def add_thin_backslash(font: TTFont, recursive_path: str) -> list[int]:
     Reuses the static build's escape-only contextual logic (add_stylistic_set):
     thin when the backslash is followed by an escape character, but not a Windows
     drive path (``:\\``) and not the 2nd of a consecutive pair (``\\\\``). Escape
-    chars are resolved through GSUB single-subs so the ss13 forms (r.simple etc.)
-    are covered too. With dlig on, Recursive ligates \\b \\n \\r \\t \\v into
+    chars are resolved through GSUB single-subs so the moxy-bundled forms
+    (r.simple etc.) are covered too. With dlig on, Recursive ligates \\b \\n \\r \\t \\v into
     backslash_X.code (just backslash+letter, no special drawing), so a multiple-sub
     decomposes those to thin-backslash + the base letter.
     """
@@ -467,7 +460,7 @@ def add_thin_backslash(font: TTFont, recursive_path: str) -> list[int]:
 
 
 # ----------------------------------------------------------------------------
-# lilx tweak: 12 added single-char arrows Recursive lacks (gated, not default).
+# lilx tweak: 12 added single-char arrows Recursive lacks (always-on).
 
 # Lilex glyph names == uniXXXX of the hooked / looping / circular / double arrows.
 ARROW_GLYPHS = [
@@ -477,15 +470,12 @@ ARROW_GLYPHS = [
 
 
 def add_arrow_chars(font: TTFont, recursive_path: str) -> list[int]:
-    """Add 12 fancy single-char arrows from Lilex, GATED behind lilx.
+    """Add 12 fancy single-char arrows from Lilex, ALWAYS-ON (cmap'd straight).
 
-    Recursive maps none of these codepoints (they render as .notdef). To keep the
-    default pristine, each codepoint is cmap'd to a placeholder (a copy of
-    Recursive's own .notdef, so the bare font shows the same tofu OG does) and lilx
-    single-subs the placeholder to the real, variable arrow. (Tradeoff: mapping
-    these codepoints suppresses OS font-fallback for them when lilx is off — the
-    cost of gating new-codepoint glyphs behind a GSUB feature, since cmap itself
-    can't be feature-gated. Flip to always-on by cmapping straight to the arrow.)
+    Recursive maps none of these codepoints (they render as .notdef). Moxy
+    grafts the real, variable arrow from Lilex and cmap's the codepoint
+    straight to it — no placeholder, no feature gating. The arrows are visible
+    in the bare font, independent of `lilx` or `moxy`.
     """
     light, heavy = wght_anchors(
         recursive_path,
@@ -494,24 +484,10 @@ def add_arrow_chars(font: TTFont, recursive_path: str) -> list[int]:
         probe_source="hyphen",
         axis="vertical",
     )
-    notdef = font["glyf"][".notdef"]
-    notdef_adv = font["hmtx"].metrics[".notdef"][0]
     cmap_tables = [t for t in font["cmap"].tables if t.isUnicode()]
 
-    mapping = {}
     for name in ARROW_GLYPHS:
         cp = int(name[3:], 16)
-        # placeholder = static copy of .notdef (matches OG tofu)
-        ph = f"{name}.off"
-        box = copy.deepcopy(notdef)
-        box.recalcBounds(font["glyf"])
-        font["glyf"][ph] = box
-        font["hmtx"].metrics[ph] = (notdef_adv, box.xMin if box.numberOfContours > 0 else 0)
-        if ph not in font.getGlyphOrder():
-            font.setGlyphOrder(list(font.getGlyphOrder()) + [ph])
-        font["gvar"].variations[ph] = []  # static box, no variation
-
-        # real, variable arrow (reached only via lilx)
         graft_variable_alternate(
             font,
             source_path=LILEX_VF,
@@ -521,14 +497,12 @@ def add_arrow_chars(font: TTFont, recursive_path: str) -> list[int]:
             heavy_wght=heavy,
         )
         for t in cmap_tables:
-            t.cmap[cp] = ph
-        mapping[ph] = name
+            t.cmap[cp] = name
 
     font.getReverseGlyphMap(rebuild=True)
-    idx = append_lookup(font, single_sub_lookup(mapping))
-    print(f"  • added {len(ARROW_GLYPHS)} arrows (gated): Lilex wght "
-          f"{light}->{heavy}, lookup {idx}")
-    return [idx]
+    print(f"  • added {len(ARROW_GLYPHS)} arrows (always-on): Lilex wght "
+          f"{light}->{heavy}")
+    return []
 
 
 # ----------------------------------------------------------------------------
@@ -628,9 +602,9 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     print(f"Renaming family -> '{FAMILY}'")
     rename_family(font, font_version(src_path))
 
-    if KAUSH_SETS:
-        print("Adding Recursive choices bundle (ss13)")
-        add_kaush_preferences(font)
+    if MOXY_BUNDLE:
+        print("Adding moxy feature (forward letterform bundle)")
+        add_moxy_feature(font)
 
     # ---- default fix: Recursive-style long arrows (extends dlig) --------------
     # Built BEFORE lilx so its lookups get lower indices and HarfBuzz applies them
@@ -638,10 +612,15 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     # before lilx's connected-dash chain would turn those dashes into Lilex seq
     # pieces. Plain dash runs (no arrowhead) fall through to lilx as before.
     if options.get("Long Arrows", True):
-        print("Adding default long-arrow fix (--->, <--, <-->, …) to dlig")
+        print("Adding long-arrow fix (--->, <--, <-->, …) to dlig + default-on calt")
         from vf_long_arrows import long_arrows
         la = long_arrows(font, src_path)
         print(f"  • long arrows -> dlig lookups {la}")
+        # Also wire the long-arrow lookups into a default-on calt so they render
+        # without dlig (Recursive ships no calt; Moxy's long-arrow fix is additive
+        # and always-on). Recursive's own code ligatures stay in dlig (opt-in).
+        add_feature(font, feature_tag="calt", lookup_indices=la)
+        print(f"  • long arrows -> calt (default-on) lookups {la}")
 
     # ---- lilx: the ported-from-Lilex tweaks, all behind one opt-in tag --------
     print("Building lilx feature (opt-in Lilex tweaks)")
@@ -670,19 +649,6 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
 
     # rebuild glyph-name cache before any compile/cmap touches new glyphs
     font.getReverseGlyphMap(rebuild=True)
-
-    # ---- invert defaults: Moxy look becomes default; features become reverts -
-    # (plan Phase A / Option B). Runs after lilx/ss13/long-arrows exist, before
-    # the mono-default rebase. Adds no glyphs (cmap edits + appended lookups).
-    if options.get("Invert Defaults", True):
-        print("Inverting defaults (Moxy look default; lilx/ss13/ssNN/extra become reverts)")
-        from vf_invert import invert_defaults
-        invert_defaults(
-            font,
-            ss_tags=KAUSH_SETS,
-            extra_tags=EXTRA_INVERT_TAGS,
-            code_ligatures=options.get("Code Ligatures", True),
-        )
 
     # ---- pure-mono + mono-by-default -----------------------------------------
     # Moxy is a coding font, so MONO is PINNED to its default value (1, Mono) and
