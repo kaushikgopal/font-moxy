@@ -567,8 +567,12 @@ def add_linear_instances(font: TTFont, instances: list[dict] | None = None) -> N
         inst.flags = 0
         font["fvar"].instances.append(inst)
         added += 1
-    print(f"  • added {added} Mono Linear (CASL=0) named instances "
-          f"(incl. the default) for macOS CoreText")
+    casl_counts: dict[float, int] = {}
+    for inst in font["fvar"].instances:
+        c = inst.coordinates.get("CASL", 0.0)
+        casl_counts[c] = casl_counts.get(c, 0) + 1
+    casl_summary = ", ".join(f"CASL={c}: {n}" for c, n in sorted(casl_counts.items()))
+    print(f"  • named instances now in font ({casl_summary})")
 
 
 # ----------------------------------------------------------------------------

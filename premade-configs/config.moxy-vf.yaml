@@ -52,9 +52,12 @@ Default Axis Location:
 
 # Extra named instances at CASL=0 keep macOS CoreText from snapping the default
 # to Recursive's own CASL=0 named instances (so the subfamily names stay Moxy's,
-# not Recursive's). (MONO is dropped from these automatically once the axis is
-# pinned away.)
+# not Recursive's). A parallel set at CASL=1 ensures `font-variation = CASL=1`
+# also snaps to a Moxy-named instance at the right weight, instead of CoreText
+# falling back to the nearest CASL=0 instance (the fvar default at wght=375).
+# (MONO is dropped from these automatically once the axis is pinned away.)
 Named Instances:
+  # CASL=0 (Linear) — the fvar default lives here
   - { name: Light, CASL: 0, wght: 300, slnt: 0, CRSV: 0.5 }
   - { name: Regular, CASL: 0, wght: 375, slnt: 0, CRSV: 0.5 }
   - { name: Medium, CASL: 0, wght: 500, slnt: 0, CRSV: 0.5 }
@@ -65,6 +68,17 @@ Named Instances:
   - { name: Medium Italic, CASL: 0, wght: 500, slnt: -15, CRSV: 0.5 }
   - { name: Bold Italic, CASL: 0, wght: 700, slnt: -15, CRSV: 0.5 }
   - { name: Black Italic, CASL: 0, wght: 900, slnt: -15, CRSV: 0.5 }
+  # CASL=1 (Casual) — so font-variation = CASL=1 snaps correctly at these weights
+  - { name: Casual Light, CASL: 1, wght: 300, slnt: 0, CRSV: 0.5 }
+  - { name: Casual, CASL: 1, wght: 375, slnt: 0, CRSV: 0.5 }
+  - { name: Casual Medium, CASL: 1, wght: 500, slnt: 0, CRSV: 0.5 }
+  - { name: Casual Bold, CASL: 1, wght: 700, slnt: 0, CRSV: 0.5 }
+  - { name: Casual Black, CASL: 1, wght: 900, slnt: 0, CRSV: 0.5 }
+  - { name: Casual Light Italic, CASL: 1, wght: 300, slnt: -15, CRSV: 0.5 }
+  - { name: Casual Italic, CASL: 1, wght: 375, slnt: -15, CRSV: 0.5 }
+  - { name: Casual Medium Italic, CASL: 1, wght: 500, slnt: -15, CRSV: 0.5 }
+  - { name: Casual Bold Italic, CASL: 1, wght: 700, slnt: -15, CRSV: 0.5 }
+  - { name: Casual Black Italic, CASL: 1, wght: 900, slnt: -15, CRSV: 0.5 }
 
 # -----------------------------------------------------------------------------
 # Moxy letterform bundle
