@@ -11,14 +11,19 @@ Mechanism, by category (all empirically verified with uharfbuzz at MONO 0/1):
 
 * Base-glyph swaps (curvy parens; the 12 added arrows) → moved to the **cmap**,
   so they are the default independent of any shaper feature logic.
-* Letterforms (Recursive's own ss03/06/08/10/11: simplified f/r, serifless L/Z,
-  dotted 0, simplified 1) → their FORWARD single-sub lookups are registered under
-  a new default-on ``calt`` (HarfBuzz/CoreText apply ``calt`` by default), so the
-  simplified forms are default and still compose with ``rvrn``/MONO. The ``ssNN``
-  tags (and ``ss13``) are rebuilt as the REVERSE (simplified→Recursive). Because
-  the forward maps are many-to-one (``f`` and ``f.mono`` both → ``f.simple``), the
-  reverse is tuned to the canonical default location (MONO=1, Mono): it restores
-  the ``.mono`` form. See DEVIATION in the implementation notes.
+* Letterforms (Recursive's own ss02/03/06/09/10/11: single-story g, simplified
+  f/r, simplified 6&9, dotted 0, simplified 1) → their FORWARD single-sub lookups
+  are registered under a new default-on ``calt`` (HarfBuzz/CoreText apply ``calt``
+  by default), so the simplified forms are default and still compose with
+  ``rvrn``/MONO. The ``ssNN`` tags (and ``ss13``) are rebuilt as the REVERSE
+  (simplified→Recursive). Because the forward maps are many-to-one (``f`` and
+  ``f.mono`` both → ``f.simple``), the reverse is tuned to the canonical default
+  location (MONO=1, Mono): it restores the ``.mono`` form. See DEVIATION in the
+  implementation notes.
+* Extra non-ssNN single-sub features (e.g. ``titl`` — Recursive's titling Q,
+  Q→Q.titl) → handled the same way: forward lookup moved into the default-on
+  ``calt`` (fancy form is default), feature rebuilt as the REVERSE. These are NOT
+  rolled into the ``ss13`` bundle — each stays its own runtime revert toggle.
 * Contextual / ligature tweaks (connected dashes, connected bars, thin escape
   backslash) + Recursive's own code ligatures (``dlig``) + the long-arrow fix →
   all registered under the new default-on ``calt`` so the full Moxy look (incl.
@@ -28,7 +33,8 @@ Mechanism, by category (all empirically verified with uharfbuzz at MONO 0/1):
   Moxy-only glyph (``*.lilx``, ``*.seq``) back to its Recursive original.
 
 Net result: bare font = Moxy; ``lilx`` reverts the Lilex tweaks; ``ss13`` (UI name
-"Alt. Recursive choices") reverts all five letterforms; each ``ssNN`` reverts one.
+"Alt. Recursive choices") reverts all the bundled letterforms; each ``ssNN``
+reverts one; each extra tag (e.g. ``titl``) reverts its own glyph.
 ``lilx``+``ss13`` together return the revertible glyph set to pristine Recursive
 (the 12 arrows + long arrows are additive, always-on).
 """
@@ -108,9 +114,11 @@ def _invert_forward(forward: dict[str, str], glyphs: set[str]) -> dict[str, str]
 def invert_defaults(
     font: TTFont,
     ss_tags: list[str] | None = None,
+    extra_tags: list[str] | None = None,
     code_ligatures: bool = True,
 ) -> None:
-    ss_tags = list(ss_tags or ["ss03", "ss06", "ss08", "ss10", "ss11"])
+    ss_tags = list(ss_tags or ["ss02", "ss03", "ss06", "ss09", "ss10", "ss11"])
+    extra_tags = list(extra_tags or [])
     gsub = font["GSUB"].table
     LL = gsub.LookupList.Lookup
     go = set(font.getGlyphOrder())
@@ -162,15 +170,17 @@ def invert_defaults(
 
     # ---- 3. letterforms: forward → default; build reverse per ssNN --------
     ss_fwd_by_tag = {tag: feature_lookup_indices(font, [tag]) for tag in ss_tags}
+    extra_fwd_by_tag = {tag: feature_lookup_indices(font, [tag]) for tag in extra_tags}
     all_ss_fwd = sorted({i for v in ss_fwd_by_tag.values() for i in v})
+    all_extra_fwd = sorted({i for v in extra_fwd_by_tag.values() for i in v})
 
     # ---- 4. Recursive ligatures + long arrows (currently in dlig) ---------
     dlig_fwd = feature_lookup_indices(font, ["dlig"]) if code_ligatures else []
 
-    # ---- 5. NEW default-on calt = dlig + ss-forward + connected-forward ----
+    # ---- 5. NEW default-on calt = dlig + ss-forward + extra-forward + connected ----
     # Sorted by lookup index so existing ordering invariants hold (Recursive
     # ligatures + long arrows run before the lilx-derived connected subs).
-    calt_lookups = sorted(set(dlig_fwd) | set(all_ss_fwd) | set(connected_fwd))
+    calt_lookups = sorted(set(dlig_fwd) | set(all_ss_fwd) | set(all_extra_fwd) | set(connected_fwd))
     add_feature(font, feature_tag="calt", lookup_indices=calt_lookups)
 
     # ---- 6. rebuild lilx as the REVERT of the Lilex tweaks ----------------
@@ -187,7 +197,7 @@ def invert_defaults(
         lilx_revert.append(append_lookup(font, single_sub_lookup(moxy_reverse)))
     _set_feature_lookups(font, "lilx", lilx_revert)
 
-    # ---- 7. letterform reverts: ssNN (one each) + ss13 (all five) ---------
+    # ---- 7. letterform reverts: ssNN (one each) + ss13 (all ssNN) ---------
     ss13_revert: list[int] = []
     for tag in ss_tags:
         rev = _invert_forward(_gather_mapping(font, ss_fwd_by_tag[tag]), go)
@@ -198,8 +208,20 @@ def invert_defaults(
         ss13_revert.append(idx)
     _set_feature_lookups(font, "ss13", ss13_revert)
 
+    # ---- 8. extra (non-ssNN) reverts: one each, NOT bundled into ss13 ----
+    extra_revert_tags: list[str] = []
+    for tag in extra_tags:
+        rev = _invert_forward(_gather_mapping(font, extra_fwd_by_tag[tag]), go)
+        if not rev:
+            continue
+        idx = append_lookup(font, single_sub_lookup(rev))
+        _set_feature_lookups(font, tag, [idx])
+        extra_revert_tags.append(tag)
+
     font.getReverseGlyphMap(rebuild=True)
 
+    extra_str = f"; extra reverts={extra_revert_tags}" if extra_revert_tags else ""
     print(f"  • inverted defaults: parens+{len(arrow_off_map)} arrows -> cmap; "
           f"calt(default-on) lookups={len(calt_lookups)}; "
-          f"lilx revert lookups={lilx_revert}; ss13 revert lookups={ss13_revert}")
+          f"lilx revert lookups={lilx_revert}; ss13 revert lookups={ss13_revert}"
+          f"{extra_str}")

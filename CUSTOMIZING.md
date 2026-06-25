@@ -78,11 +78,13 @@ How the variable font is wired (see `scripts/vf_invert.py` for the details):
 
 - The customized "Moxy" look is the **default** — curvy parens and the added arrows
   live in the `cmap`; connected dashes/bars, the thin escape backslash, the
-  simplified letterforms, Recursive's own code ligatures, and the long-arrow fix all
-  live in a default-on `calt` feature.
+  simplified letterforms, the titling `Q`, Recursive's own code ligatures, and the
+  long-arrow fix all live in a default-on `calt` feature.
 - The feature tags are **reverts**: `lilx` undoes the Lilex tweaks, `ss13`
-  ("Alt. Recursive choices") undoes the five letterforms, and `ss03/06/08/10/11`
-  undo one letter each. The 12 added arrows and the long-arrow fix are always on.
+  ("Alt. Recursive choices") undoes the bundled letterforms (`ss02/03/06/09/10/11`
+  — single-story `g`, simplified `f r 6 9 0 1`), and each `ssNN` undoes one letter;
+  `titl` swaps the fancy `Q` back to Recursive's plain `Q`. The 12 added arrows and
+  the long-arrow fix are always on.
 - Moxy is **pure monospace**: Recursive's `MONO` axis is pinned to Mono (1) and
   dropped (see `Pure Mono` in `config.moxy-vf.yaml`), so the VF carries four axes
   (CASL, wght, slnt, CRSV). This also bakes out ~half of Recursive's `gvar`
@@ -96,9 +98,10 @@ axis instances, line-height / spacing, and which features are frozen on:
 - **Borrowed Glyphs / Join Dashes / Add Characters / Stylistic Sets** — the Lilex
   tweaks grafted in (curvy parens, connected dashes/bars, thin backslash, added
   arrows).
-- **Features** (`ss03 ss06 ss08 ss10 ss11`) — Recursive's own stylistic sets frozen
-  into the static output. Remove an entry to keep Recursive's plain form for that
-  glyph instead; add others (see the comments in the file) to bake them on.
+- **Features** (`ss02 ss03 ss06 ss09 ss10 ss11 titl`) — Recursive's own stylistic
+  sets (plus the `titl` titling Q) frozen into the static output. Remove an entry
+  to keep Recursive's plain form for that glyph instead; add others (see the
+  comments in the file) to bake them on.
 
 To experiment, duplicate the config with a new `Family Name` and point the build
 script at it:
@@ -150,5 +153,5 @@ git pull upstream main
   and `images/comparison.png`.
 - The variable font carries four axes (Casual, Weight, Slant, Cursive) — Moxy is
   pure monospace, so Recursive's Monospace axis is pinned to Mono and dropped. Its
-  default instance is Mono Casual Regular, so the bare font is a usable terminal
-  monospace.
+  default instance is Mono Linear Regular (CASL=0), so the bare font is a usable
+  terminal monospace.

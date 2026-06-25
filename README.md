@@ -56,8 +56,9 @@ you dial these back toward Recursive with opt-in features:
 
 - `lilx` — turn **off** the Lilex tweaks (parens, connected dashes/bars, thin
   backslash) and get Recursive's shapes back.
-- `ss13` — "Alt. Recursive choices": restore Recursive's `f r L Z 0 1`.
-- `ss03 / ss06 / ss08 / ss10 / ss11` — restore one letterform at a time.
+- `ss13` — "Alt. Recursive choices": restore Recursive's `g f r 6 9 0 1`.
+- `ss02 / ss03 / ss06 / ss09 / ss10 / ss11` — restore one letterform at a time.
+- `titl` — swap the fancy long-tail `Q` back to Recursive's plain `Q`.
 
 Enabling `lilx` **and** `ss13` returns the (revertible) glyphs to pristine
 Recursive. In Ghostty:

@@ -14,9 +14,11 @@ Two revert bundles:
     curvy parens (Lilex cv13), connected dashes, connected bars (Lilex cv11),
     a thin escape-only backslash, and the 12 added single-char arrows.
   * ``ss13`` (registered stylistic set, UI name "Kaush's preferences") — whose
-    Feature references Recursive's OWN ss03/ss06/ss08/ss10/ss11 lookups, so one
-    toggle applies Simplified f / Simplified r / serifless L&Z / dotted 0 /
-    simplified 1 together.
+    feature references Recursive's OWN ss02/ss03/ss06/ss09/ss10/ss11 lookups, so
+    one toggle applies single-story g / Simplified f / Simplified r / Simplified
+    6&9 / dotted 0 / simplified 1 together.
+  * ``titl`` — Recursive's titling Q (Q→Q.titl) becomes the Moxy default;
+    enabling ``titl`` reverts to Recursive's plain Q. (Separate from ``ss13``.)
 
 Plus a DEFAULT calt fix: Recursive-style long arrows (--->, <--, …) built from
 Recursive's own arrow geometry (native height), because the default font has no
@@ -66,7 +68,7 @@ FAMILY = "Moxy"
 # "Moxy-Regular" etc. if both are ever installed.
 PS_NAME = "Moxy-VF"
 DEFAULT_OUT = "fonts/Moxy-VF/Moxy[CASL,wght,slnt,CRSV].ttf"
-DEFAULT_AXIS_LOCATION = {"MONO": 1, "CASL": 0.5, "wght": 375}
+DEFAULT_AXIS_LOCATION = {"MONO": 1, "CASL": 0, "wght": 375}
 
 # OFL-1.1 license metadata baked into the name table (id 0/13/14), so the license
 # travels with the binary. Moxy derives from Recursive + Lilex (both OFL-1.1), so
@@ -83,9 +85,11 @@ LICENSE_DESC = (
 LICENSE_URL = "https://openfontlicense.org"
 
 # Recursive's own stylistic sets the user prefers, bundled under "Kaush's prefs":
-#   ss03 Simplified f, ss06 Simplified r, ss08 serifless L&Z, ss10 dotted 0,
-#   ss11 simplified 1.
-KAUSH_SETS = ["ss03", "ss06", "ss08", "ss10", "ss11"]
+#   ss02 single-story g, ss03 Simplified f, ss06 Simplified r, ss09 Simplified 6&9,
+#   ss10 dotted 0, ss11 simplified 1.
+# Non-ssNN tags inverted the same way but NOT bundled into ss13 (e.g. titl).
+KAUSH_SETS = ["ss02", "ss03", "ss06", "ss09", "ss10", "ss11"]
+EXTRA_INVERT_TAGS: list[str] = []
 
 
 def load_config(config_path: str) -> dict:
@@ -104,13 +108,14 @@ def font_version(src_path: str) -> str:
 
 
 def configure_globals(options: dict) -> None:
-    global FAMILY, PS_NAME, LILEX_VF, KAUSH_SETS, ARROW_GLYPHS
+    global FAMILY, PS_NAME, LILEX_VF, KAUSH_SETS, EXTRA_INVERT_TAGS, ARROW_GLYPHS
 
     FAMILY = options.get("Family Name", FAMILY)
     PS_NAME = options.get("PostScript Name", PS_NAME)
     LILEX_VF = options.get("Lilex VF", LILEX_VF)
     if "Features" in options:
         KAUSH_SETS = list(options.get("Features") or [])
+    EXTRA_INVERT_TAGS = list(options.get("Extra Features") or [])
 
     add_chars = options.get("Add Characters") or {}
     if add_chars.get("source"):
@@ -530,14 +535,16 @@ def add_arrow_chars(font: TTFont, recursive_path: str) -> list[int]:
 
 
 # ----------------------------------------------------------------------------
-# Named instances at the Mono Semicasual (MONO=1, CASL=0.5) use points, so macOS
-# CoreText renders CASL=0.5 (which it would otherwise snap to the nearest named
-# instance — only CASL 0/1 exist in Recursive's inherited set).
+# Named instances at the Mono Linear (MONO=1, CASL=0) use points, so macOS
+# CoreText renders CASL=0 (which it would otherwise snap to the nearest named
+# instance — only CASL 0/1 exist in Recursive's inherited set, so the default
+# would land on Recursive's own "Linear" named instance with the wrong subfamily
+# name).
 
-# (subfamily name, wght, slnt, CRSV); MONO=1, CASL=0.5 for all.
-SEMICASUAL_INSTANCES = [
+# (subfamily name, wght, slnt, CRSV); MONO=1, CASL=0 for all.
+LINEAR_INSTANCES = [
     ("Light", 300, 0, 0.5),
-    ("Regular", 375, 0, 0.5),          # == the fvar default
+    ("Regular", 375, 0, 0.5),           # == the fvar default
     ("Medium", 500, 0, 0.5),
     ("Bold", 700, 0, 0.5),
     ("Black", 900, 0, 0.5),
@@ -549,7 +556,7 @@ SEMICASUAL_INSTANCES = [
 ]
 
 
-def add_semicasual_instances(font: TTFont, instances: list[dict] | None = None) -> None:
+def add_linear_instances(font: TTFont, instances: list[dict] | None = None) -> None:
     from fontTools.ttLib.tables._f_v_a_r import NamedInstance
     name = font["name"]
     added = 0
@@ -557,12 +564,12 @@ def add_semicasual_instances(font: TTFont, instances: list[dict] | None = None) 
         {
             "name": subfamily,
             "MONO": 1.0,
-            "CASL": 0.5,
+            "CASL": 0.0,
             "wght": wght,
             "slnt": slnt,
             "CRSV": crsv,
         }
-        for subfamily, wght, slnt, crsv in SEMICASUAL_INSTANCES
+        for subfamily, wght, slnt, crsv in LINEAR_INSTANCES
     ]
     # Only coordinate axes that still exist on the font (Moxy is pure-mono: MONO
     # is pinned away, so drop it from instance coordinates).
@@ -586,7 +593,7 @@ def add_semicasual_instances(font: TTFont, instances: list[dict] | None = None) 
         inst.flags = 0
         font["fvar"].instances.append(inst)
         added += 1
-    print(f"  • added {added} Mono Semicasual (CASL=0.5) named instances "
+    print(f"  • added {added} Mono Linear (CASL=0) named instances "
           f"(incl. the default) for macOS CoreText")
 
 
@@ -668,11 +675,12 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     # (plan Phase A / Option B). Runs after lilx/ss13/long-arrows exist, before
     # the mono-default rebase. Adds no glyphs (cmap edits + appended lookups).
     if options.get("Invert Defaults", True):
-        print("Inverting defaults (Moxy look default; lilx/ss13/ssNN become reverts)")
+        print("Inverting defaults (Moxy look default; lilx/ss13/ssNN/extra become reverts)")
         from vf_invert import invert_defaults
         invert_defaults(
             font,
             ss_tags=KAUSH_SETS,
+            extra_tags=EXTRA_INVERT_TAGS,
             code_ligatures=options.get("Code Ligatures", True),
         )
 
@@ -681,7 +689,7 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     # the axis is dropped — there's no useful Sans (proportional) mode in a
     # terminal, and baking MONO out removes ~half of Recursive's gvar deltas
     # (≈28% smaller VF) plus the MONO-conditioned feature variations. The other
-    # axes are only REBASED (default moved, full range kept): CASL=0.5, wght=375,
+    # axes are only REBASED (default moved, full range kept): CASL=0, wght=375,
     # with slnt/CRSV still fully reachable. Set "Pure Mono: false" in the config to
     # keep MONO live instead.
     pure_mono = options.get("Pure Mono", True)
@@ -706,13 +714,14 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
         pretty = ", ".join(f"{tag}={value}" for tag, value in axis_defaults.items())
         print(f"Re-based default -> {pretty}{pinned}; axes now {kept}")
 
-    # ---- named instances at the Mono Semicasual (CASL=0.5) use points ---------
+    # ---- named instances at the Mono Linear (CASL=0) use points --------------
     # Recursive's inherited named instances only sit at CASL 0/1 and MONO 0/1, so
     # macOS CoreText (which snaps a VF's coordinates to the NEAREST named instance)
-    # snaps our CASL=0.5 default — and any font-variation=CASL=0.5 — to Casual.
-    # Add exact named instances at MONO=1, CASL=0.5 (incl. the default) so those
-    # render correctly. Additive: the CASL 0/1 instances stay, so those keep working.
-    add_semicasual_instances(font, options.get("Named Instances"))
+    # snaps our CASL=0 default onto Recursive's own "Linear" named instance (and
+    # its subfamily name). Add exact named instances at MONO=1, CASL=0 (incl. the
+    # default) so those render under Moxy's subfamily names. Additive: the CASL
+    # 0/1 instances stay, so those keep working.
+    add_linear_instances(font, options.get("Named Instances"))
 
     # ---- advertise true monospace --------------------------------------------
     # With MONO pinned to Mono, every glyph is the 600-unit cell at every axis

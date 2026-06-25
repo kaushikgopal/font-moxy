@@ -31,41 +31,44 @@ Pure Mono: true
 # Variable default
 #
 # The VF keeps each remaining axis range, but moves the default point so plain
-# `Moxy` is a mono semicasual regular. Omit an axis to keep Recursive's source
+# `Moxy` is a mono linear regular. Omit an axis to keep Recursive's source
 # default. (MONO is pinned per "Pure Mono" above, not a live default here.)
 
 Default Axis Location:
   MONO: 1
-  CASL: 0.5
+  CASL: 0
   wght: 375
 
-# Extra named instances at CASL=0.5 keep macOS CoreText from snapping the default
-# and semicasual use-points to Recursive's CASL=0 or CASL=1 named instances.
-# (MONO is dropped from these automatically once the axis is pinned away.)
+# Extra named instances at CASL=0 keep macOS CoreText from snapping the default
+# to Recursive's own CASL=0 named instances (so the subfamily names stay Moxy's,
+# not Recursive's). (MONO is dropped from these automatically once the axis is
+# pinned away.)
 Named Instances:
-  - { name: Light, CASL: 0.5, wght: 300, slnt: 0, CRSV: 0.5 }
-  - { name: Regular, CASL: 0.5, wght: 375, slnt: 0, CRSV: 0.5 }
-  - { name: Medium, CASL: 0.5, wght: 500, slnt: 0, CRSV: 0.5 }
-  - { name: Bold, CASL: 0.5, wght: 700, slnt: 0, CRSV: 0.5 }
-  - { name: Black, CASL: 0.5, wght: 900, slnt: 0, CRSV: 0.5 }
-  - { name: Light Italic, CASL: 0.5, wght: 300, slnt: -15, CRSV: 0.5 }
-  - { name: Italic, CASL: 0.5, wght: 375, slnt: -15, CRSV: 0.5 }
-  - { name: Medium Italic, CASL: 0.5, wght: 500, slnt: -15, CRSV: 0.5 }
-  - { name: Bold Italic, CASL: 0.5, wght: 700, slnt: -15, CRSV: 0.5 }
-  - { name: Black Italic, CASL: 0.5, wght: 900, slnt: -15, CRSV: 0.5 }
+  - { name: Light, CASL: 0, wght: 300, slnt: 0, CRSV: 0.5 }
+  - { name: Regular, CASL: 0, wght: 375, slnt: 0, CRSV: 0.5 }
+  - { name: Medium, CASL: 0, wght: 500, slnt: 0, CRSV: 0.5 }
+  - { name: Bold, CASL: 0, wght: 700, slnt: 0, CRSV: 0.5 }
+  - { name: Black, CASL: 0, wght: 900, slnt: 0, CRSV: 0.5 }
+  - { name: Light Italic, CASL: 0, wght: 300, slnt: -15, CRSV: 0.5 }
+  - { name: Italic, CASL: 0, wght: 375, slnt: -15, CRSV: 0.5 }
+  - { name: Medium Italic, CASL: 0, wght: 500, slnt: -15, CRSV: 0.5 }
+  - { name: Bold Italic, CASL: 0, wght: 700, slnt: -15, CRSV: 0.5 }
+  - { name: Black Italic, CASL: 0, wght: 900, slnt: -15, CRSV: 0.5 }
 
 # -----------------------------------------------------------------------------
 # Font features from Recursive
 #
 # Use Recursive's feature tags here, not Moxy's feature tags.
-# - Good: ss03, ss06, ss08, ss10, ss11, etc. from Recursive.
+# - Good: ss02, ss03, ss06, ss09, ss10, ss11, etc. from Recursive.
 # - Do not use: lilx, ss13, or other Moxy variable-font revert toggles.
 #
 # These Recursive source features become default-on in the Moxy VF. After the build
 # inverts defaults, ss13 becomes the runtime toggle that reverts them back toward
 # Recursive. That means ss13 is an output feature, not an input setting here.
 #
-# Keep this list to Recursive single-substitution ssNN features.
+# Keep this list to Recursive single-substitution ssNN features. Non-ssNN tags
+# (e.g. titl) go under "Extra Features" below — they're inverted the same way but
+# are NOT bundled into the ss13 revert.
 #
 # Recursive feature reference:
 #     https://github.com/arrowtype/recursive-code-config#1-customize-your-font-settings-in-configyaml
@@ -76,17 +79,30 @@ Invert Defaults: True
 
 Features:
   # - ss01 # Single story a
-  # - ss02 # Single story g
+  - ss02 # Single story g
   - ss03 # Simplified f
   # - ss04 # Simplified i
   # - ss05 # Simplified l
   - ss06 # Simplified r
   # - ss07 # Simplified italic diagonals
-  - ss08 # No-serif L and Z
-  # - ss09 # Simplified 6 & 9
+  # - ss08 # No-serif L and Z  (off: serif L & Z is the Moxy default)
+  - ss09 # Simplified 6 & 9
   - ss10 # Dotted 0
   - ss11 # Simplified 1
   # - ss12 # Simplified @
+
+# -----------------------------------------------------------------------------
+# Extra (non-ssNN) Recursive features to invert
+#
+# Same treatment as the ssNN above (forward lookup -> default-on calt; feature
+# rebuilt as a revert), but these are NOT rolled into the ss13 "Alt. Recursive
+# choices" bundle — each stays its own runtime revert toggle.
+#
+#   titl — Recursive's titling Q (Q -> Q.titl, the fancy long-tail Q) becomes the
+#          Moxy default; enabling `titl` reverts to Recursive's plain Q.
+
+Extra Features:
+  - titl # Titling Q as default; reverts to plain Q
 
 # -----------------------------------------------------------------------------
 # Lilex section starts - Borrowed Glyphs

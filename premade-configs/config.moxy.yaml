@@ -89,7 +89,7 @@ Code Ligatures: True
 # Include Recursive font features to freeze into the static output.
 #
 # Use Recursive's feature tags here, not Moxy's feature tags.
-# - Good: ss03, ss06, ss08, ss10, ss11, etc. from Recursive.
+# - Good: ss02, ss03, ss06, ss09, ss10, ss11, titl, etc. from Recursive.
 # - Do not use: lilx, ss13, or other Moxy variable-font revert toggles.
 #
 # The static build starts from Recursive's original VF, then bakes these choices
@@ -107,11 +107,12 @@ Features:
   # - ss05 # Simplified l
   - ss06 # Simplified r
   # - ss07 # Simplified italic diagonals
-  - ss08 # No-serif L and Z
+  # - ss08 # No-serif L and Z  (off: serif L & Z is the Moxy default)
   - ss09 # Simplified 6 & 9
   - ss10 # Dotted 0
   - ss11 # Simplified 1
   # - ss12 # Simplified @
+  - titl # Titling Q (fancy long-tail Q) baked on as the default
   # - frac # fractions
 
 
