@@ -318,7 +318,7 @@ def splitFont(
         from glyph_tweaks import (
             draw_percent_static, draw_slash_static, draw_backslash_static,
             draw_checkmark_static, draw_bullet_static, draw_dollar_static,
-            draw_at_static, draw_ampersand_static,
+            draw_at_static, draw_ampersand_static, draw_two_static,
         )
         inst_wght = fontOptions["Fonts"][instance]["wght"]
         inst_slnt = fontOptions["Fonts"][instance]["slnt"]
@@ -330,7 +330,8 @@ def splitFont(
         draw_dollar_static(monoFont, inst_wght, inst_slnt)
         draw_at_static(monoFont, inst_wght, inst_slnt)
         draw_ampersand_static(monoFont, inst_wght, inst_slnt)
-        print(f"\n\t• Drew %, /, \\, ✓, •, $, @, & (wght {inst_wght}, slnt {inst_slnt})")
+        draw_two_static(monoFont, inst_wght, inst_slnt)
+        print(f"\n\t• Drew %, /, \\, ✓, •, $, @, &, 2 (wght {inst_wght}, slnt {inst_slnt})")
 
         # drop STAT table to allow RIBBI style naming & linking on Windows
         try:

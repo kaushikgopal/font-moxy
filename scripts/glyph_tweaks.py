@@ -654,6 +654,46 @@ def draw_ampersand(font):
 
 
 # --------------------------------------------------------------------------------------
+# Numerals 2 4 5 7 — DRAWN directly (OFL-clean geometry), matching the target
+# monospace numeral aesthetic. These override Recursive's own numerals (they are
+# not, and never were, grafted). ``4`` and ``7`` are point-compatible across the
+# reference Regular/Heavy weights, so they get two masters (Bold thickens); ``2``
+# and ``5`` are not point-compatible, so they are single-master (constant across
+# wght; italic shears ~15°). No composites reference the base numerals, so
+# overriding ``two``/``four``/``five``/``seven`` in place is safe (the fraction
+# glyphs like ``twothirds`` are independently drawn).
+
+# 2 (U+0032): a curved two with a top bowl, diagonal shoulder, and flat base.
+# Single master (1 contour, 38 points). Derived from a reference outline,
+# cap-scaled into the 600 cell.
+_TWO_LIGHT = [
+    (76.6, 503.0), (76.6, 500.1), (159.1, 500.1), (159.1, 503.0),
+    (159.1, 544.3), (192.6, 605.4), (252.7, 639.4), (293.0, 639.4),
+    (333.7, 639.4), (394.4, 608.3), (427.3, 552.5), (427.3, 514.7),
+    (427.3, 493.8), (417.6, 456.5), (393.4, 414.3), (350.7, 359.9),
+    (317.2, 322.6), (80.5, 59.2), (80.5, 0.0), (523.4, 0.0),
+    (523.4, 77.6), (202.7, 77.6), (202.7, 85.9), (367.7, 265.3),
+    (409.4, 310.9), (465.2, 381.3), (498.2, 439.0), (512.2, 490.9),
+    (512.2, 518.1), (512.2, 561.7), (480.7, 634.0), (423.0, 686.4),
+    (343.4, 714.6), (295.4, 714.6), (247.4, 714.6), (167.3, 683.5),
+    (108.6, 626.7), (76.6, 549.1),
+]
+_TWO_END_PTS = [37]
+_TWO_FLAGS = [1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
+              0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+
+
+def draw_two(font):
+    """Variable build: draw ``2`` (U+0032) overriding Recursive's numeral.
+
+    Single master (constant across wght; italic shears) — the reference design's
+    Regular/Heavy outlines aren't point-compatible for this glyph. OFL-clean
+    hardcoded geometry."""
+    _draw_glyph_variable(font, "two", _TWO_LIGHT, _TWO_LIGHT,
+                         _TWO_END_PTS, _TWO_FLAGS)
+
+
+# --------------------------------------------------------------------------------------
 # Static-build counterparts (already-instanced font, no gvar): interpolate the
 # light/heavy masters by the instance's normalised weight and shear for italic.
 
@@ -723,3 +763,9 @@ def draw_ampersand_static(font, wght, slnt=0.0):
     """Static build: draw ``&`` at the instance's slant (single master)."""
     _draw_glyph_static(font, "ampersand", _AMP_LIGHT, _AMP_LIGHT,
                        _AMP_END_PTS, _AMP_FLAGS, wght, slnt)
+
+
+def draw_two_static(font, wght, slnt=0.0):
+    """Static build: draw ``2`` at the instance's slant (single master)."""
+    _draw_glyph_static(font, "two", _TWO_LIGHT, _TWO_LIGHT,
+                       _TWO_END_PTS, _TWO_FLAGS, wght, slnt)
