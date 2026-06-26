@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moxy — Character Test</title>
+<style>
+  :root{
+    --bg:#fbfaf8; --surface:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e7e4df;
+    --two:#2f6f4e; --single:#b8860b; --radius:10px;
+    --font:ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#16140f; --surface:#1f1c16; --ink:#ece7dd; --muted:#9b9487; --line:#332f27;}
+  }
+  body{background:var(--bg); color:var(--ink); font:16px/1.5 var(--font);
+    margin:0; padding:32px 24px 60px;}
+  h1{font-size:26px; margin:0 0 4px;}
+  .sub{color:var(--muted); margin:0 0 18px; font-size:14px;}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; margin:0 0 20px; font-size:13px;}
+  .legend .pill{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:10px; height:10px; border-radius:50%; display:inline-block;}
+  .dot.two{background:var(--two);} .dot.single{background:var(--single);}
+  table{border-collapse:collapse; width:100%; background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
+  th,td{border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:0;}
+  th{font:600 13px/1 var(--font); color:var(--muted); padding:12px 8px; text-align:center;
+    background:rgba(127,127,127,.06); white-space:nowrap;}
+  th:first-child{text-align:left; padding-left:16px;}
+  td{text-align:center;}
+  td:first-child{text-align:left; padding:8px 16px; white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  td .label{display:inline-flex; align-items:baseline; gap:8px;}
+  td .label .ch{font:700 30px/1 "Moxy",monospace; font-variation-settings:"wght" 400;}
+  td .label .nm{font-size:13px; color:var(--ink);}
+  td .label .cp{font-size:11px; color:var(--muted); font-family:ui-monospace,monospace;}
+  .badge{display:inline-block; font:600 10px/1 var(--font); padding:3px 7px; border-radius:20px;
+    color:#fff; margin-left:6px; vertical-align:middle;}
+  .badge.two{background:var(--two);} .badge.single{background:var(--single);}
+  .glyph{font-family:"Moxy",monospace; font-size:72px; line-height:1.2;
+    display:block; padding:18px 8px; color:var(--ink);}
+  .note{margin-top:24px; color:var(--muted); font-size:13px; line-height:1.6;
+    border-top:1px solid var(--line); padding-top:16px;}
+  .note code{font:12px/1.4 ui-monospace,monospace; background:rgba(127,127,127,.12);
+    padding:1px 5px; border-radius:4px;}
+  .missing{color:var(--single); font-size:13px; font-family:var(--font);}
+</style>
+</head>
+<body>
+<h1>Moxy — Character Test</h1>
+<p class="sub">All drawn/overridden glyphs at 7 weights, using the installed Moxy variable font.</p>
+
+<div class="legend">
+  <span class="pill"><span class="dot two"></span> two-master (thickens with weight)</span>
+  <span class="pill"><span class="dot single"></span> single-master (constant across weight)</span>
+</div>
+
+<table id="grid">
+  <thead>
+    <tr id="head"></tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<div class="note">
+  <p>Uses the locally-installed <code>Moxy</code> VF (<code>font-variation-settings: "wght" N</code>).
+  If glyphs render as fallback boxes, run <code>make install-vf</code> and reload.</p>
+  <p><strong>What to look for:</strong> two-master glyphs (green) should visibly thicken from 300→900.
+  Single-master glyphs (amber) stay constant — that's expected for <code>$ @ &amp;</code> (they replaced
+  constant-weight grafts), but a <em>bug</em> for numerals that sit alongside two-master ones
+  (<code>2</code> and <code>5</code> should thicken like <code>4</code> and <code>7</code>).</p>
+</div>
+
+<script>
+const CHARS = [
+  {ch:"\u2713", name:"checkmark",  cp:"U+2713", master:"two"},
+  {ch:"\u2022", name:"bullet",     cp:"U+2022", master:"two"},
+  {ch:"/",      name:"slash",      cp:"U+002F", master:"two"},
+  {ch:"\\",     name:"backslash",  cp:"U+005C", master:"two"},
+  {ch:"%",      name:"percent",    cp:"U+0025", master:"two"},
+  {ch:"$",      name:"dollar",     cp:"U+0024", master:"single"},
+  {ch:"@",      name:"at",         cp:"U+0040", master:"single"},
+  {ch:"&",      name:"ampersand",  cp:"U+0026", master:"single"},
+  {ch:"2",      name:"two",        cp:"U+0032", master:"single"},
+  {ch:"4",      name:"four",       cp:"U+0034", master:"two"},
+  {ch:"5",      name:"five",       cp:"U+0035", master:"single"},
+  {ch:"7",      name:"seven",      cp:"U+0037", master:"two"},
+];
+const WEIGHTS = [300, 400, 500, 600, 700, 800, 900];
+
+const head = document.getElementById("head");
+head.innerHTML = "<th>glyph</th>" +
+  WEIGHTS.map(w => `<th>wght ${w}</th>`).join("");
+
+const rows = document.getElementById("rows");
+for (const c of CHARS) {
+  const tr = document.createElement("tr");
+  const esc = c.ch === "&" ? "&amp;" : c.ch;
+  tr.innerHTML =
+    `<td><span class="label">
+       <span class="ch">${esc}</span>
+       <span class="nm">${c.name}</span>
+       <span class="cp">${c.cp}</span>
+       <span class="badge ${c.master}">${c.master}</span>
+     </span></td>` +
+    WEIGHTS.map(w =>
+      `<td><span class="glyph" style="font-variation-settings:'wght' ${w}">${esc}</span></td>`
+    ).join("");
+  rows.appendChild(tr);
+}
+</script>
+</body>
+</html>

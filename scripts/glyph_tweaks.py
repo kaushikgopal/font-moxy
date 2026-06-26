@@ -664,8 +664,10 @@ def draw_ampersand(font):
 # glyphs like ``twothirds`` are independently drawn).
 
 # 2 (U+0032): a curved two with a top bowl, diagonal shoulder, and flat base.
-# Single master (1 contour, 38 points). Derived from a reference outline,
-# cap-scaled into the 600 cell.
+# Two-master (1 contour, 38 points). The reference design's Regular/Heavy
+# outlines aren't point-compatible (different point counts), so the heavy master
+# is hand-built from the Regular's topology with coordinates mapped/interpolated
+# from the reference Heavy. Bold thickens.
 _TWO_LIGHT = [
     (76.6, 503.0), (76.6, 500.1), (159.1, 500.1), (159.1, 503.0),
     (159.1, 544.3), (192.6, 605.4), (252.7, 639.4), (293.0, 639.4),
@@ -678,6 +680,18 @@ _TWO_LIGHT = [
     (343.4, 714.6), (295.4, 714.6), (247.4, 714.6), (167.3, 683.5),
     (108.6, 626.7), (76.6, 549.1),
 ]
+_TWO_HEAVY = [
+    (28.8, 480.7), (28.8, 477.8), (191.8, 477.8), (191.8, 481.2),
+    (191.8, 510.3), (217.5, 554.5), (263.6, 579.7), (293.7, 579.7),
+    (336.9, 579.7), (389.3, 532.6), (389.3, 513.2), (389.3, 493.8),
+    (389.3, 477.8), (377.1, 446.3), (348.5, 408.0), (298.1, 357.0),
+    (260.2, 322.1), (39.0, 118.8), (39.0, 0.0), (571.2, 0.0),
+    (571.2, 138.7), (276.2, 138.7), (276.2, 148.0), (391.7, 249.3),
+    (453.3, 303.7), (528.0, 390.0), (561.5, 467.2), (561.5, 486.8),
+    (561.5, 506.4), (561.5, 553.0), (524.1, 629.2), (454.7, 684.5),
+    (358.7, 714.1), (300.0, 714.1), (239.4, 714.1), (139.4, 680.6),
+    (67.6, 619.0), (28.8, 533.1),
+]
 _TWO_END_PTS = [37]
 _TWO_FLAGS = [1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
               0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0]
@@ -686,10 +700,9 @@ _TWO_FLAGS = [1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 
 def draw_two(font):
     """Variable build: draw ``2`` (U+0032) overriding Recursive's numeral.
 
-    Single master (constant across wght; italic shears) — the reference design's
-    Regular/Heavy outlines aren't point-compatible for this glyph. OFL-clean
-    hardcoded geometry."""
-    _draw_glyph_variable(font, "two", _TWO_LIGHT, _TWO_LIGHT,
+    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
+    so Bold thickens. OFL-clean hardcoded geometry."""
+    _draw_glyph_variable(font, "two", _TWO_LIGHT, _TWO_HEAVY,
                          _TWO_END_PTS, _TWO_FLAGS)
 
 
@@ -723,8 +736,10 @@ def draw_four(font):
 
 
 # 5 (U+0035): a curved five — top horizontal bar, descending shoulder into a
-# rounded bowl, flat base. Single master (1 contour, 39 points, has curves).
-# Derived from a reference outline, cap-scaled into the 600 cell.
+# rounded bowl, flat base. Two-master (1 contour, 39 points, has curves). The
+# reference design's Regular/Heavy outlines aren't point-compatible (different
+# point counts), so the heavy master is hand-built from the Regular's topology
+# with coordinates mapped from the reference Heavy. Bold thickens.
 _FIVE_LIGHT = [
     (295.6, -14.1), (349.0, -14.1), (436.8, 19.9), (499.9, 83.4),
     (534.3, 170.8), (534.3, 223.6), (534.3, 275.5), (502.3, 360.9),
@@ -737,6 +752,18 @@ _FIVE_LIGHT = [
     (193.3, 94.6), (152.0, 150.4), (148.2, 186.8), (65.7, 186.8),
     (69.6, 126.6), (129.2, 36.4), (230.6, -14.1),
 ]
+_FIVE_HEAVY = [
+    (297.3, -14.1), (359.4, -14.1), (460.3, 22.3), (533.1, 89.7),
+    (572.4, 183.9), (572.4, 241.6), (572.4, 292.5), (540.9, 376.4),
+    (482.6, 437.6), (354.1, 470.5), (302.7, 470.5), (223.6, 433.2),
+    (194.0, 399.2), (203.7, 399.2), (206.1, 561.3), (527.3, 561.3),
+    (527.3, 700.0), (65.0, 700.0), (33.9, 290.1), (206.6, 290.1),
+    (223.6, 318.7), (268.2, 344.9), (298.8, 344.9), (330.8, 344.9),
+    (378.8, 317.7), (405.5, 269.7), (405.5, 237.2), (405.5, 205.2),
+    (378.8, 156.7), (330.8, 129.5), (298.8, 129.5), (260.0, 129.5),
+    (206.1, 171.2), (199.8, 206.2), (27.6, 206.2), (28.1, 157.2),
+    (67.9, 76.6), (139.2, 17.9), (237.7, -14.1),
+]
 _FIVE_END_PTS = [38]
 _FIVE_FLAGS = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1,
                0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0]
@@ -745,10 +772,9 @@ _FIVE_FLAGS = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1,
 def draw_five(font):
     """Variable build: draw ``5`` (U+0035) overriding Recursive's numeral.
 
-    Single master (constant across wght; italic shears) — the reference design's
-    Regular/Heavy outlines aren't point-compatible for this glyph. OFL-clean
-    hardcoded geometry."""
-    _draw_glyph_variable(font, "five", _FIVE_LIGHT, _FIVE_LIGHT,
+    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
+    so Bold thickens. OFL-clean hardcoded geometry."""
+    _draw_glyph_variable(font, "five", _FIVE_LIGHT, _FIVE_HEAVY,
                          _FIVE_END_PTS, _FIVE_FLAGS)
 
 
@@ -850,8 +876,8 @@ def draw_ampersand_static(font, wght, slnt=0.0):
 
 
 def draw_two_static(font, wght, slnt=0.0):
-    """Static build: draw ``2`` at the instance's slant (single master)."""
-    _draw_glyph_static(font, "two", _TWO_LIGHT, _TWO_LIGHT,
+    """Static build: draw ``2`` at the instance's weight/slant (two-master)."""
+    _draw_glyph_static(font, "two", _TWO_LIGHT, _TWO_HEAVY,
                        _TWO_END_PTS, _TWO_FLAGS, wght, slnt)
 
 
@@ -862,8 +888,8 @@ def draw_four_static(font, wght, slnt=0.0):
 
 
 def draw_five_static(font, wght, slnt=0.0):
-    """Static build: draw ``5`` at the instance's slant (single master)."""
-    _draw_glyph_static(font, "five", _FIVE_LIGHT, _FIVE_LIGHT,
+    """Static build: draw ``5`` at the instance's weight/slant (two-master)."""
+    _draw_glyph_static(font, "five", _FIVE_LIGHT, _FIVE_HEAVY,
                        _FIVE_END_PTS, _FIVE_FLAGS, wght, slnt)
 
 
