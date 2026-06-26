@@ -12,14 +12,15 @@ option):
   * ``%`` (slash + two oval ring dots), ``/`` and ``\\`` (clean straight
     slashes), ``✓`` (fuller 6-point check), ``•`` (fuller circle), ``$``
     (dollar sign), ``@`` (spiral at-sign) and ``&`` (ampersand) — all drawn
-    directly from explicit geometry. The shapes match SF Mono's, reconstructed
-    here, not borrowed.
+    directly from explicit geometry. The shapes match a popular monospace
+    terminal aesthetic, reconstructed here, not borrowed.
 
 For each drawn glyph, the variable build installs gvar masters and the static
 build interpolates/shears per instance. ``✓`` ``•`` ``/`` ``\\`` ``%`` use two
 point-compatible masters (Regular + Heavy) for full weight variation; ``$``
 ``@`` ``&`` are single-master (constant across wght; italic shears ~15°) because
-SF Mono's Regular/Heavy outlines aren't point-compatible for those glyphs.
+the reference design's Regular/Heavy outlines aren't point-compatible for those
+glyphs.
 """
 
 from __future__ import annotations
@@ -339,12 +340,13 @@ def _install_variable_glyph(font, glyph_name, locs, coords_by_loc, end_pts, flag
 
 
 # --------------------------------------------------------------------------------------
-# Fuller ✓ and •, clean / and \, and SF-Mono-style % — DRAWN directly (pure
+# Fuller ✓ and •, clean / and \, and the Moxy % — DRAWN directly (pure
 # geometry), not grafted.
 #
-# The shapes match SF Mono's (measured once, cap-scaled into Moxy's 700-cap / 600
-# cell), but are reconstructed from the explicit coordinates below — nothing is
-# read from, or shipped out of, any external font. This keeps them OFL-clean.
+# The shapes match a popular monospace terminal design (measured once,
+# cap-scaled into Moxy's 700-cap / 600 cell), but are reconstructed from the
+# explicit coordinates below — nothing is read from, or shipped out of, any
+# external font. This keeps them OFL-clean.
 # Two point-compatible masters (Regular + Heavy) give the weight variation; the
 # italic master is the upright sheared by Recursive's ~15° lean.
 
@@ -363,14 +365,14 @@ _CHECK_END_PTS = [5]
 _CHECK_FLAGS = [1] * 6  # every point on-curve (straight edges)
 
 # • (U+2022): a true circle, centred in the 600 cell. Centre-y and radius are
-# measured from SF Mono (Regular → Heavy); drawn as an 8-segment TrueType
+# tuned across Regular → Heavy; drawn as an 8-segment TrueType
 # quadratic, so it stays a perfectly round, point-compatible circle at any weight.
 _BULLET_CX = 300.0
 _BULLET_LIGHT = (310.5, 205.0)   # (centre-y, radius)
 _BULLET_HEAVY = (311.9, 226.1)
 
 # / (slash) and \ (backslash): a clean 4-point parallelogram (one slanted stroke,
-# no brushy flair). Corners measured from SF Mono (Regular → Heavy), cap-scaled
+# no brushy flair). Corners tuned across Regular → Heavy, cap-scaled
 # and centred in the cell; the stroke thickens with weight. Backslash is the
 # mirror; its composites (backslash.code, .case, the \b \n \r \t \v escape
 # ligatures) reference ``backslash``, so they inherit.
@@ -427,9 +429,9 @@ def _bullet_master(spec):
     return coords, [len(coords) - 1], flags
 
 
-# % (U+0025): SF Mono style — a diagonal slash plus two vertical-oval ring dots
+# % (U+0025): the Moxy style — a diagonal slash plus two vertical-oval ring dots
 # (each an outer ellipse with an inner counter), point-symmetric about the cell
-# centre. Measured from SF Mono (Regular → Heavy); the counters shrink as the
+# centre. Tuned across Regular → Heavy; the counters shrink as the
 # ring wall thickens with weight. Each spec: a 4-corner slash + four ellipses
 # ordered (top-left outer, top-left inner, bottom-right outer, bottom-right inner).
 _PERCENT_LIGHT = dict(
@@ -509,22 +511,24 @@ def draw_backslash(font):
 
 
 def draw_percent(font):
-    """Variable build: draw ``%`` as SF Mono's slash + two oval ring dots."""
+    """Variable build: draw ``%`` as a diagonal slash + two oval ring dots."""
     light, end_pts, flags = _percent_master(_PERCENT_LIGHT)
     heavy, _, _ = _percent_master(_PERCENT_HEAVY)
     _draw_glyph_variable(font, "percent", light, heavy, end_pts, flags)
 
 
 # --------------------------------------------------------------------------------------
-# @ & $ — DRAWN directly (OFL-clean geometry), matching SF Mono.
+# @ & $ — DRAWN directly (OFL-clean geometry), matching the target monospace
+# aesthetic.
 #
-# SF Mono's Regular and Heavy masters are NOT point-compatible for these glyphs
-# (different point counts/structure), so the two-master light/heavy trick used
-# for ✓ • / \ % doesn't apply. Instead each glyph is drawn from a SINGLE master
-# (measured from SF Mono Regular via cu2qu, cap-scaled into Moxy's 700-cap / 600
-# cell, then hardcoded here so the build reads no external font). The glyph stays
-# constant across wght; italic still shears by Recursive's ~15°. Pass light ==
-# heavy to the existing helpers to get single-master behaviour.
+# The reference design's Regular and Heavy masters are NOT point-compatible for
+# these glyphs (different point counts/structure), so the two-master light/heavy
+# trick used for ✓ • / \ % doesn't apply. Instead each glyph is drawn from a
+# SINGLE master (derived via cu2qu from a reference outline, cap-scaled into
+# Moxy's 700-cap / 600 cell, then hardcoded here so the build reads no external
+# font). The glyph stays constant across wght; italic still shears by Recursive's
+# ~15°. Pass light == heavy to the existing helpers to get single-master
+# behaviour.
 
 # $ (U+0024): S-curve with two bowls and a central vertical bar that overshoots
 # the top and bottom. 3 contours: outer S+bar, top-bowl counter, bottom-bowl
@@ -561,8 +565,8 @@ _DOLLAR_FLAGS = [
 def draw_dollar(font):
     """Variable build: draw ``$`` (U+0024) as Moxy's reference dollar sign.
 
-    Single master (constant across wght; italic shears) — SF Mono's weight
-    masters aren't point-compatible for this glyph. Replaces the prior SF Mono
+    Single master (constant across wght; italic shears) — the reference design's
+    weight masters aren't point-compatible for this glyph. Replaces the prior
     graft with hardcoded geometry (OFL-clean)."""
     _draw_glyph_variable(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_LIGHT,
                          _DOLLAR_END_PTS, _DOLLAR_FLAGS)
@@ -570,7 +574,7 @@ def draw_dollar(font):
 
 # @ (U+0040): the modern single-contour spiral at-sign — one continuous path
 # that forms the outer ring, swings in to become the inner counter wall, and
-# curls into the central tail. Measured from SF Mono Regular (cap-scaled into
+# curls into the central tail. Derived from a reference outline (cap-scaled into
 # the 600 cell). 1 contour, 50 points.
 _AT_LIGHT = [
     (310.9, -96.0), (346.8, -96.0), (412.3, -85.4), (429.8, -77.1),
@@ -606,8 +610,8 @@ def draw_at(font):
 
 
 # & (U+0026): the intricate ampersand — a figure-eight "et" shape with two
-# enclosed counters (the upper loop and the lower loop). Measured from SF Mono
-# Regular (cap-scaled into the 600 cell). 3 contours: outer body, upper-loop
+# enclosed counters (the upper loop and the lower loop). Derived from a
+# reference outline (cap-scaled into the 600 cell). 3 contours: outer body, upper-loop
 # counter, lower-loop counter (counters wind opposite the outer).
 _AMP_LIGHT = [
     # contour 0 — outer body (points 0..36)
