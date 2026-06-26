@@ -752,6 +752,31 @@ def draw_five(font):
                          _FIVE_END_PTS, _FIVE_FLAGS)
 
 
+# 7 (U+0037): a seven — top horizontal bar, diagonal stroke down to the
+# baseline, small foot serif at bottom-left. TWO-master (point-compatible
+# Regular + Heavy), so Bold thickens. 1 contour, 8 points, all on-curve.
+# Derived from reference outlines, cap-scaled into the 600 cell.
+_SEVEN_LIGHT = [
+    (128.5, 0.0), (219.7, 0.0), (533.6, 620.9), (533.6, 700.0),
+    (66.4, 700.0), (66.4, 623.4), (446.3, 623.4), (446.3, 617.0),
+]
+_SEVEN_HEAVY = [
+    (91.4, 0.0), (277.7, 0.0), (560.5, 562.7), (560.5, 700.5),
+    (39.5, 700.5), (39.5, 563.2), (382.0, 563.2), (382.0, 554.0),
+]
+_SEVEN_END_PTS = [7]
+_SEVEN_FLAGS = [1] * 8
+
+
+def draw_seven(font):
+    """Variable build: draw ``7`` (U+0037) overriding Recursive's numeral.
+
+    Two-master (light = Regular, heavy = Heavy) — point-compatible across
+    weights, so Bold thickens. OFL-clean hardcoded geometry."""
+    _draw_glyph_variable(font, "seven", _SEVEN_LIGHT, _SEVEN_HEAVY,
+                         _SEVEN_END_PTS, _SEVEN_FLAGS)
+
+
 # --------------------------------------------------------------------------------------
 # Static-build counterparts (already-instanced font, no gvar): interpolate the
 # light/heavy masters by the instance's normalised weight and shear for italic.
@@ -840,3 +865,9 @@ def draw_five_static(font, wght, slnt=0.0):
     """Static build: draw ``5`` at the instance's slant (single master)."""
     _draw_glyph_static(font, "five", _FIVE_LIGHT, _FIVE_LIGHT,
                        _FIVE_END_PTS, _FIVE_FLAGS, wght, slnt)
+
+
+def draw_seven_static(font, wght, slnt=0.0):
+    """Static build: draw ``7`` at the instance's weight/slant (two-master)."""
+    _draw_glyph_static(font, "seven", _SEVEN_LIGHT, _SEVEN_HEAVY,
+                       _SEVEN_END_PTS, _SEVEN_FLAGS, wght, slnt)
