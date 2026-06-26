@@ -11,7 +11,8 @@ Format:
 - `- key: value` lines set parameters for that section.
 - A fenced code block holds the specimen's code lines. Prefix a line with a color
   in brackets to tint it — one of: `text` (default), `muted`, `green`, `blue`,
-  `peach`, `mauve`, `pink`. Lines are rendered verbatim (ligatures via `calt`).
+  `peach`, `mauve`, `pink`. Moxy specimens use the full VF look (`calt`, `moxy`,
+  `lilx`).
 - A markdown table (`| label | sample |`) holds the comparison rows. The sample is
   drawn twice — once in Recursive, once in Moxy. Escape a literal pipe as `\|`.
 - The OpenType feature table uses `{braces}` in the Active column to color the
@@ -23,7 +24,7 @@ Format:
 - tagline: a monospaced | coding font
 
 ```
-fn pipe(xs):  xs |> map(f) |> sum             # connected  |>
+fn pipe(xs):  xs |> map(f) |> sum             # lilx connected  |>
 [green]contiguous lines: --------------------        # show as a single line
 [peach]route: -> --> ---> -----> <- <-- <--- <-----  # long arrows
 [blue]\n \r \o \t   r'\[(?:[^][]|\\[\[\]]|(?R))*\]' # thin escape  \\
@@ -52,7 +53,7 @@ ids:  0 1 f r L Z   <=  >=  ===  ->  =>       # letterforms
 | tag | description | default | active | active features | style | default features |
 | --- | --- | --- | --- | --- | --- | --- |
 | calt | Code ligatures | => && === | {=> && ===} | calt | mono | -calt |
-| lilx | Recursive code shapes | (\|>) ---- "\n" | {(\|>) ---- "\n"} | calt,lilx | mono | calt |
+| lilx | Lilex borrowings | (\|>) ---- "\n" | {(\|>) ---- "\n"} | lilx | mono |  |
 | ss01 | Single-story 'a' | JavaScript | Jav{a}Script | ss01 | mono |  |
 | ss02 | Single-story 'g' | Regex | Re{g}ex | ss02 | mono |  |
 | ss03 | Recursive 'f' | justify-self | justi{f}y-self | ss03 | mono |  |

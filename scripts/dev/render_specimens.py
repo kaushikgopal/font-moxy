@@ -35,6 +35,7 @@ PAL = {
     "comment": "#0088ff",
 }
 DOTS = ["#ff5f56", "#ffbd2e", "#27c93f"]  # mac traffic lights
+MOXY_FEATURES = ("calt", "moxy", "lilx")
 
 
 # ----------------------------------------------------------------- spec parsing
@@ -162,7 +163,8 @@ def render_specimen(sec):
     for i, line in enumerate(lines):
         m = re.match(r"^\[(\w+)\](.*)$", line)
         color, txt = (PAL.get(m.group(1), PAL["text"]), m.group(2)) if m else (PAL["text"], line)
-        draw(d, (card_x + 30, card_y + pad_top + i * lh), txt, cf, color)
+        draw(d, (card_x + 30, card_y + pad_top + i * lh), txt, cf, color,
+             feats=MOXY_FEATURES)
     save(img, sec["out"])
 
 
@@ -191,7 +193,7 @@ def render_comparison(sec):
             d.line([lblx * S, (y - 8) * S, (W - 40) * S, (y - 8) * S], fill="#23394a", width=S)
         draw(d, (lblx, y + 8), label, moxy(20, 430), PAL["dim"])
         draw(d, (colL, y + 2), sample, rf, PAL["muted"], feats=("dlig", "calt"))
-        draw(d, (colR, y + 2), sample, mf, PAL["text"], feats=("calt",))
+        draw(d, (colR, y + 2), sample, mf, PAL["text"], feats=MOXY_FEATURES)
     save(img, sec["out"])
 
 
@@ -216,7 +218,7 @@ def render_opentype_features(sec):
     sample_sans = moxy(26, 650, mono=0)
     sample_sans_italic = moxy(26, 650, mono=0, slnt=-15, crsv=1)
 
-    draw(d, (x_tag, title_y), title, title_f, PAL["text"], feats=())
+    draw(d, (x_tag, title_y), title, title_f, PAL["text"], feats=MOXY_FEATURES)
     draw(d, (x_default, header_y), "Default", head_f, PAL["text"], feats=())
     draw(d, (x_active, header_y), "Active", head_f, PAL["text"], feats=())
     d.line([0, (row_top - 8) * S, W * S, (row_top - 8) * S], fill=PAL["dim"], width=S)

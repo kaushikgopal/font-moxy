@@ -25,24 +25,37 @@ and install the `.ttf` files (macOS: open them in Font Book).
 
 ### Use it
 
-Set the family name to **`Moxy`** in your editor / terminal.
+The Homebrew cask installs the static family as **`Moxy Static`**. The static
+fonts bake in the Moxy look, so no OpenType feature toggles are needed.
 
 For example in [Ghostty](https://ghostty.org):
 
 ```ini
-font-family = Moxy
-# below are my preferences
-adjust-cell-height      = 10
-font-size               = 13
-font-variation          = wght=375
+font-family = Moxy Static
+font-size = 13.5
+adjust-cell-height = 9
 ```
 
-Most editors enable contextual ligatures (`calt`) by default, which is what Moxy
-uses for connected dashes, long arrows, and the rest. In VS Code, turn them on
-with:
+If you build/install the variable font yourself, use the **`Moxy`** family and
+turn on the opt-in Moxy features:
+
+```ini
+font-family = Moxy
+font-feature = moxy,lilx
+font-variation = CASL=1
+```
+
+`wght=375` is already the variable font's default, so leave it out unless you
+want a different weight. In Ghostty, setting a redundant `wght=375` can interfere
+with the visible `CASL` change on macOS.
+
+Most editors keep contextual alternates (`calt`) on by default; Moxy uses `calt`
+for the always-on long-arrow repair. The variable font's `moxy` / `lilx` toggles
+are custom features, so enable them explicitly where your editor supports
+OpenType feature settings. In VS Code:
 
 ```jsonc
-"editor.fontLigatures": true
+"editor.fontLigatures": "'calt', 'moxy', 'lilx'"
 ```
 
 ## What's different from Recursive
@@ -59,7 +72,7 @@ features on top:
 - `moxy` — turn **on** the Moxy letterform set: single-story `g`, simplified
   `f r 6 9 1`, dotted `0`, fancy long-tail `Q`.
 - `lilx` — turn **on** the Lilex borrowings: curvy parens, connected
-  dashes/bars, thin escape backslash.
+  `|>` / `<|` bars, connected dashes, thin escape backslash.
 - `ss02 / ss03 / ss06 / ss09 / ss10 / ss11 / titl` — enable one letterform at
   a time (these compose with `moxy`).
 
