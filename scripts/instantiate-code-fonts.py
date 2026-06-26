@@ -310,33 +310,26 @@ def splitFont(
             )
 
         # -------------------------------------------------------
-        # Moxy percent reshape. The static fonts ship via the cask (OFL), so the
-        # geometric reshape is used here (the grafts live in the variable-font
-        # build). This gives the static fonts a connected-style % without any
-        # non-OFL outlines.
-        from glyph_tweaks import reshape_percent_instance
-        reshape_percent_instance(monoFont, fontOptions["Fonts"][instance]["wght"])
-        print("\n\t• Reshaped percent (connected slash + corner dots)")
-
-        # Fuller ✓ and • grafted from the reference font, weight- and slant-
-        # matched to this instance. Composites bullet.case and uni2219 reference
-        # 'bullet' as a component, so they inherit.
-        from glyph_tweaks import graft_checkmark_static, graft_bullet_static
-        inst_wght = fontOptions["Fonts"][instance]["wght"]
-        inst_slnt = fontOptions["Fonts"][instance]["slnt"]
-        graft_checkmark_static(monoFont, inst_wght, inst_slnt)
-        graft_bullet_static(monoFont, inst_wght, inst_slnt)
-        print(f"\n\t• Grafted ✓ and • (wght {inst_wght}, slnt {inst_slnt})")
-
-        # @, &, $ grafted from the reference font (single-master, no weight
-        # interpolation). at.case references 'at' as a component, so it inherits.
+        # %, /, \ grafted from the reference font, weight- and slant-matched
+        # to this instance — the same outlines the variable-font build uses.
+        # Composites (backslash.code, .case, escape ligatures, bullet.case,
+        # uni2219) reference these as components, so they inherit.
         from glyph_tweaks import (
+            graft_percent_static, graft_slash_static, graft_backslash_static,
+            graft_checkmark_static, graft_bullet_static,
             graft_at_static, graft_ampersand_static, graft_dollar_static,
         )
+        inst_wght = fontOptions["Fonts"][instance]["wght"]
+        inst_slnt = fontOptions["Fonts"][instance]["slnt"]
+        graft_percent_static(monoFont, inst_wght, inst_slnt)
+        graft_slash_static(monoFont, inst_wght, inst_slnt)
+        graft_backslash_static(monoFont, inst_wght, inst_slnt)
+        graft_checkmark_static(monoFont, inst_wght, inst_slnt)
+        graft_bullet_static(monoFont, inst_wght, inst_slnt)
         graft_at_static(monoFont, inst_wght, inst_slnt)
         graft_ampersand_static(monoFont, inst_wght, inst_slnt)
         graft_dollar_static(monoFont, inst_wght, inst_slnt)
-        print(f"\n\t• Grafted @, &, $ (wght {inst_wght}, slnt {inst_slnt})")
+        print(f"\n\t• Grafted %, /, \\, ✓, •, @, &, $ (wght {inst_wght}, slnt {inst_slnt})")
 
         # drop STAT table to allow RIBBI style naming & linking on Windows
         try:

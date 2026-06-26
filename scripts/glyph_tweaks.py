@@ -522,6 +522,25 @@ def graft_bullet_static(font, wght, slnt=0.0):
     _graft_glyph_static(font, "bullet", wght, slnt)
 
 
+def graft_percent_static(font, wght, slnt=0.0):
+    """Static build: swap ``%`` for Moxy's connected diagonal design."""
+    _graft_glyph_static(font, "percent", wght, slnt)
+
+
+def graft_slash_static(font, wght, slnt=0.0):
+    """Static build: swap ``/`` for Moxy's clean straight slash."""
+    _graft_glyph_static(font, "slash", wght, slnt)
+
+
+def graft_backslash_static(font, wght, slnt=0.0):
+    """Static build: swap ``\\`` for Moxy's clean straight backslash.
+
+    Composites (backslash.code, .case, and the escape ligatures) reference
+    ``backslash`` as a component, so they inherit automatically.
+    """
+    _graft_glyph_static(font, "backslash", wght, slnt)
+
+
 def _pick_ref_static(wght):
     """Pick the closest reference weight for a static instance. Recursive's
     Regular (375) maps to the Regular master; Bold (600) maps to Semibold."""
