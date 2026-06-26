@@ -328,6 +328,16 @@ def splitFont(
         graft_bullet_static(monoFont, inst_wght, inst_slnt)
         print(f"\n\t• Grafted ✓ and • (wght {inst_wght}, slnt {inst_slnt})")
 
+        # @, &, $ grafted from the reference font (single-master, no weight
+        # interpolation). at.case references 'at' as a component, so it inherits.
+        from glyph_tweaks import (
+            graft_at_static, graft_ampersand_static, graft_dollar_static,
+        )
+        graft_at_static(monoFont, inst_wght, inst_slnt)
+        graft_ampersand_static(monoFont, inst_wght, inst_slnt)
+        graft_dollar_static(monoFont, inst_wght, inst_slnt)
+        print(f"\n\t• Grafted @, &, $ (wght {inst_wght}, slnt {inst_slnt})")
+
         # drop STAT table to allow RIBBI style naming & linking on Windows
         try:
             del monoFont["STAT"]

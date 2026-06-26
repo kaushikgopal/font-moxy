@@ -11,10 +11,13 @@ strategies:
 
 The following grafts are baked in (called unconditionally from the builds, so
 they're part of Moxy's design, not a configurable option): ``%`` (connected
-diagonal), ``/`` and ``\\`` (clean straight slashes), ``✓`` (fuller check mark)
-and ``•`` (fuller bullet). The variable-font build rebuilds gvar from the
-reference masters; the static build interpolates those same masters by the
-instance's weight and shears for italic.
+diagonal), ``/`` and ``\\`` (clean straight slashes), ``✓`` (fuller check mark),
+``•`` (fuller bullet), and ``@`` ``&`` ``$`` (reference at-sign, ampersand, and
+dollar). The variable-font build rebuilds gvar from the reference masters; the
+static build interpolates those same masters by the instance's weight and shears
+for italic. ``@`` ``&`` ``$`` use a single-master graft (slant-only variation)
+because the reference font's weight masters aren't point-compatible for those
+glyphs.
 """
 
 from __future__ import annotations
@@ -391,6 +394,7 @@ def _graft_glyph_variable(font, glyph_name, light_src, heavy_src, max_err=1.0, x
 _REF_DIR = "/Library/Fonts"
 _REF_LIGHT = f"{_REF_DIR}/SF-Mono-Regular.otf"
 _REF_HEAVY = f"{_REF_DIR}/SF-Mono-Heavy.otf"
+_REF_SEMIBOLD = f"{_REF_DIR}/SF-Mono-Semibold.otf"
 
 
 def graft_glyphs_jetbrains(font, glyph_names, jb_vf=None):
@@ -447,6 +451,39 @@ def graft_bullet(font):
     _graft_glyph_variable(font, "bullet", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
 
 
+def _graft_glyph_single_master_variable(font, glyph_name, src_font):
+    """Replace ``glyph_name`` with a single reference outline — no weight
+    variation, only slant. Used when the reference font's weight masters aren't
+    point-compatible for this glyph (so ``_graft_glyph_variable`` can't
+    interpolate). The glyph stays constant across wght; italic still shears."""
+    scale = _source_scale(src_font)
+    base, end_pts, flags = _quad_outline(src_font, glyph_name, scale)
+    locs = [{}, {"slnt": -1.0}]
+    coords_by_loc = {
+        (): base,
+        (("slnt", -1.0),): _shear(base, _SHEAR_15),
+    }
+    _install_variable_glyph(font, glyph_name, locs, coords_by_loc, end_pts, flags)
+
+
+def graft_at(font):
+    """Replace ``@`` with Moxy's reference at-sign.
+
+    The composite ``at.case`` references ``at`` as a component, so it inherits.
+    """
+    _graft_glyph_single_master_variable(font, "at", TTFont(_REF_LIGHT))
+
+
+def graft_ampersand(font):
+    """Replace ``&`` with Moxy's reference ampersand."""
+    _graft_glyph_single_master_variable(font, "ampersand", TTFont(_REF_LIGHT))
+
+
+def graft_dollar(font):
+    """Replace ``$`` with Moxy's reference dollar sign."""
+    _graft_glyph_single_master_variable(font, "dollar", TTFont(_REF_LIGHT))
+
+
 # --------------------------------------------------------------------------------------
 # Static-build counterparts. The variable build rebuilds gvar from light/heavy
 # masters; the static build is already instanced, so it interpolates those same
@@ -483,3 +520,36 @@ def graft_checkmark_static(font, wght, slnt=0.0):
 def graft_bullet_static(font, wght, slnt=0.0):
     """Static build: swap ``•`` for Moxy's fuller bullet."""
     _graft_glyph_static(font, "bullet", wght, slnt)
+
+
+def _pick_ref_static(wght):
+    """Pick the closest reference weight for a static instance. Recursive's
+    Regular (375) maps to the Regular master; Bold (600) maps to Semibold."""
+    return TTFont(_REF_SEMIBOLD) if wght >= 550 else TTFont(_REF_LIGHT)
+
+
+def _graft_glyph_single_master_static(font, glyph_name, wght, slnt=0.0):
+    """Static build: replace ``glyph_name`` with a single reference outline at
+    the closest reference weight, sheared for italic. No weight interpolation
+    (the reference font's masters aren't point-compatible for these glyphs)."""
+    src = _pick_ref_static(wght)
+    scale = _source_scale(src)
+    coords, end_pts, flags = _quad_outline(src, glyph_name, scale)
+    if slnt:
+        coords = _shear(coords, math.tan(math.radians(-slnt)))
+    _write_outline(font, glyph_name, coords, end_pts, flags)
+
+
+def graft_at_static(font, wght, slnt=0.0):
+    """Static build: swap ``@`` for Moxy's reference at-sign."""
+    _graft_glyph_single_master_static(font, "at", wght, slnt)
+
+
+def graft_ampersand_static(font, wght, slnt=0.0):
+    """Static build: swap ``&`` for Moxy's reference ampersand."""
+    _graft_glyph_single_master_static(font, "ampersand", wght, slnt)
+
+
+def graft_dollar_static(font, wght, slnt=0.0):
+    """Static build: swap ``$`` for Moxy's reference dollar sign."""
+    _graft_glyph_single_master_static(font, "dollar", wght, slnt)
