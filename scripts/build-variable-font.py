@@ -679,18 +679,18 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     # ---- Moxy glyph tweaks, on the raw variable source -----------------------
     # Done first, while each tweaked glyph still carries its full gvar, so the
     # later MONO-pin + default-rebase re-normalise the result cleanly. The
-    # %, /, \ and fuller ✓, • are drawn directly (OFL-clean geometry); @, &, $
+    # %, /, \, $ and fuller ✓, • are drawn directly (OFL-clean geometry); @, &
     # are grafted from the reference font. All baked into Moxy (not configurable).
     import glyph_tweaks
-    print("Applying glyph tweaks: percent, slash, backslash, checkmark, bullet, at, ampersand, dollar")
+    print("Applying glyph tweaks: percent, slash, backslash, checkmark, bullet, dollar, at, ampersand")
     glyph_tweaks.draw_percent(font)
     glyph_tweaks.draw_slash(font)
     glyph_tweaks.draw_backslash(font)
     glyph_tweaks.draw_checkmark(font)
     glyph_tweaks.draw_bullet(font)
+    glyph_tweaks.draw_dollar(font)
     glyph_tweaks.graft_at(font)
     glyph_tweaks.graft_ampersand(font)
-    glyph_tweaks.graft_dollar(font)
 
     print(f"Renaming family -> '{FAMILY}'")
     rename_family(font, font_version(src_path))

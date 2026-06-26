@@ -14,13 +14,13 @@ strategies:
 Baked-in tweaks (called unconditionally from the builds, not a configurable
 option):
   * ``%`` (slash + two oval ring dots), ``/`` and ``\\`` (clean straight
-    slashes), ``✓`` (fuller 6-point check) and ``•`` (fuller circle) — drawn
-    directly from explicit geometry, so no external outline data is read or
-    shipped (OFL-clean). The shapes match SF Mono's, reconstructed here, not
-    borrowed.
-  * ``@`` ``&`` ``$`` (reference at-sign, ampersand, dollar) — still grafted from
-    a reference font, single-master (slant-only variation) because the reference
-    font's weight masters aren't point-compatible for those glyphs.
+    slashes), ``✓`` (fuller 6-point check), ``•`` (fuller circle) and ``$``
+    (dollar sign) — drawn directly from explicit geometry, so no external outline
+    data is read or shipped (OFL-clean). The shapes match SF Mono's,
+    reconstructed here, not borrowed.
+  * ``@`` ``&`` (reference at-sign, ampersand) — still grafted from a reference
+    font, single-master (slant-only variation) because the reference font's
+    weight masters aren't point-compatible for those glyphs.
 
 For both grafts and draws, the variable build installs gvar masters and the
 static build interpolates/shears per instance.
@@ -599,6 +599,59 @@ def draw_percent(font):
     _draw_glyph_variable(font, "percent", light, heavy, end_pts, flags)
 
 
+# --------------------------------------------------------------------------------------
+# @ & $ — DRAWN directly (OFL-clean geometry), matching SF Mono.
+#
+# SF Mono's Regular and Heavy masters are NOT point-compatible for these glyphs
+# (different point counts/structure), so the two-master light/heavy trick used
+# for ✓ • / \ % doesn't apply. Instead each glyph is drawn from a SINGLE master
+# (measured from SF Mono Regular via cu2qu, cap-scaled into Moxy's 700-cap / 600
+# cell, then hardcoded here so the build reads no external font). The glyph stays
+# constant across wght; italic still shears by Recursive's ~15°. Pass light ==
+# heavy to the existing helpers to get single-master behaviour.
+
+# $ (U+0024): S-curve with two bowls and a central vertical bar that overshoots
+# the top and bottom. 3 contours: outer S+bar, top-bowl counter, bottom-bowl
+# counter (counters wind opposite the outer so non-zero fill cuts the holes).
+_DOLLAR_LIGHT = [
+    # contour 0 — outer S + central bar (points 0..41)
+    (55.5, 184.8), (59.4, 127.6), (114.7, 41.2), (210.7, -9.7),
+    (274.8, -14.6), (274.8, -68.4), (332.5, -68.4), (332.5, -14.1),
+    (397.5, -8.7), (492.6, 43.7), (544.5, 131.5), (544.5, 189.2),
+    (544.5, 241.6), (504.7, 316.8), (418.4, 368.7), (348.5, 385.7),
+    (332.5, 390.0), (332.5, 641.8), (384.4, 634.5), (449.4, 572.9),
+    (455.7, 523.9), (532.4, 523.9), (529.5, 577.3), (478.5, 659.3),
+    (390.7, 708.7), (332.5, 714.1), (332.5, 768.4), (274.8, 768.4),
+    (274.8, 714.1), (213.2, 709.2), (122.5, 658.8), (73.0, 575.3),
+    (73.0, 520.5), (73.0, 444.8), (165.6, 350.7), (264.6, 326.5),
+    (274.8, 324.0), (274.8, 58.2), (235.0, 63.1), (173.9, 96.0),
+    (137.0, 149.9), (133.1, 184.8),
+    # contour 1 — top-bowl counter (points 42..48)
+    (152.5, 522.9), (152.5, 572.9), (217.5, 635.5), (274.8, 641.8),
+    (274.8, 404.6), (208.8, 423.0), (152.5, 477.8),
+    # contour 2 — bottom-bowl counter (points 49..56)
+    (465.4, 185.3), (465.4, 150.9), (432.4, 97.0), (372.8, 63.1),
+    (332.5, 58.2), (332.5, 309.5), (402.8, 291.5), (465.4, 232.8),
+]
+_DOLLAR_END_PTS = [41, 48, 56]
+_DOLLAR_FLAGS = [
+    1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1,
+    0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1,
+    1, 0, 0, 1, 1, 0, 0,
+    1, 0, 0, 0, 1, 1, 0, 0,
+]
+
+
+def draw_dollar(font):
+    """Variable build: draw ``$`` (U+0024) as Moxy's reference dollar sign.
+
+    Single master (constant across wght; italic shears) — SF Mono's weight
+    masters aren't point-compatible for this glyph. Replaces the prior SF Mono
+    graft with hardcoded geometry (OFL-clean)."""
+    _draw_glyph_variable(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_LIGHT,
+                         _DOLLAR_END_PTS, _DOLLAR_FLAGS)
+
+
 def _graft_glyph_single_master_variable(font, glyph_name, src_font):
     """Replace ``glyph_name`` with a single reference outline — no weight
     variation, only slant. Used when the reference font's weight masters aren't
@@ -625,11 +678,6 @@ def graft_at(font):
 def graft_ampersand(font):
     """Replace ``&`` with Moxy's reference ampersand."""
     _graft_glyph_single_master_variable(font, "ampersand", TTFont(_REF_LIGHT))
-
-
-def graft_dollar(font):
-    """Replace ``$`` with Moxy's reference dollar sign."""
-    _graft_glyph_single_master_variable(font, "dollar", TTFont(_REF_LIGHT))
 
 
 # --------------------------------------------------------------------------------------
@@ -684,6 +732,12 @@ def draw_percent_static(font, wght, slnt=0.0):
     _draw_glyph_static(font, "percent", light, heavy, end_pts, flags, wght, slnt)
 
 
+def draw_dollar_static(font, wght, slnt=0.0):
+    """Static build: draw ``$`` at the instance's slant (single master)."""
+    _draw_glyph_static(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_LIGHT,
+                       _DOLLAR_END_PTS, _DOLLAR_FLAGS, wght, slnt)
+
+
 def _pick_ref_static(wght):
     """Pick the closest reference weight for a static instance. Recursive's
     Regular (375) maps to the Regular master; Bold (600) maps to Semibold."""
@@ -710,8 +764,3 @@ def graft_at_static(font, wght, slnt=0.0):
 def graft_ampersand_static(font, wght, slnt=0.0):
     """Static build: swap ``&`` for Moxy's reference ampersand."""
     _graft_glyph_single_master_static(font, "ampersand", wght, slnt)
-
-
-def graft_dollar_static(font, wght, slnt=0.0):
-    """Static build: swap ``$`` for Moxy's reference dollar sign."""
-    _graft_glyph_single_master_static(font, "dollar", wght, slnt)
