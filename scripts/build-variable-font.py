@@ -683,7 +683,7 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     # geometry) — no external outline is read or shipped. All baked into Moxy
     # (not configurable).
     import glyph_tweaks
-    print("Applying glyph tweaks: percent, slash, backslash, checkmark, bullet, dollar, at, ampersand, two, four")
+    print("Applying glyph tweaks: percent, slash, backslash, checkmark, bullet, dollar, at, ampersand, two, four, five")
     glyph_tweaks.draw_percent(font)
     glyph_tweaks.draw_slash(font)
     glyph_tweaks.draw_backslash(font)
@@ -694,6 +694,7 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     glyph_tweaks.draw_ampersand(font)
     glyph_tweaks.draw_two(font)
     glyph_tweaks.draw_four(font)
+    glyph_tweaks.draw_five(font)
 
     print(f"Renaming family -> '{FAMILY}'")
     rename_family(font, font_version(src_path))

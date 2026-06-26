@@ -722,6 +722,36 @@ def draw_four(font):
                          _FOUR_END_PTS, _FOUR_FLAGS)
 
 
+# 5 (U+0035): a curved five — top horizontal bar, descending shoulder into a
+# rounded bowl, flat base. Single master (1 contour, 39 points, has curves).
+# Derived from a reference outline, cap-scaled into the 600 cell.
+_FIVE_LIGHT = [
+    (295.6, -14.1), (349.0, -14.1), (436.8, 19.9), (499.9, 83.4),
+    (534.3, 170.8), (534.3, 223.6), (534.3, 275.5), (502.3, 360.9),
+    (443.6, 424.0), (363.1, 457.9), (314.6, 457.9), (220.9, 457.9),
+    (168.5, 394.4), (160.8, 394.4), (180.2, 622.9), (495.5, 622.9),
+    (495.5, 700.0), (112.8, 700.0), (77.3, 304.6), (158.4, 304.6),
+    (179.2, 342.0), (253.4, 382.7), (300.5, 382.7), (345.6, 382.7),
+    (413.0, 342.5), (450.9, 269.7), (450.9, 221.7), (450.9, 174.2),
+    (413.5, 102.8), (345.6, 63.1), (300.5, 63.1), (259.7, 63.1),
+    (193.3, 94.6), (152.0, 150.4), (148.2, 186.8), (65.7, 186.8),
+    (69.6, 126.6), (129.2, 36.4), (230.6, -14.1),
+]
+_FIVE_END_PTS = [38]
+_FIVE_FLAGS = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1,
+               0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0]
+
+
+def draw_five(font):
+    """Variable build: draw ``5`` (U+0035) overriding Recursive's numeral.
+
+    Single master (constant across wght; italic shears) — the reference design's
+    Regular/Heavy outlines aren't point-compatible for this glyph. OFL-clean
+    hardcoded geometry."""
+    _draw_glyph_variable(font, "five", _FIVE_LIGHT, _FIVE_LIGHT,
+                         _FIVE_END_PTS, _FIVE_FLAGS)
+
+
 # --------------------------------------------------------------------------------------
 # Static-build counterparts (already-instanced font, no gvar): interpolate the
 # light/heavy masters by the instance's normalised weight and shear for italic.
@@ -804,3 +834,9 @@ def draw_four_static(font, wght, slnt=0.0):
     """Static build: draw ``4`` at the instance's weight/slant (two-master)."""
     _draw_glyph_static(font, "four", _FOUR_LIGHT, _FOUR_HEAVY,
                        _FOUR_END_PTS, _FOUR_FLAGS, wght, slnt)
+
+
+def draw_five_static(font, wght, slnt=0.0):
+    """Static build: draw ``5`` at the instance's slant (single master)."""
+    _draw_glyph_static(font, "five", _FIVE_LIGHT, _FIVE_LIGHT,
+                       _FIVE_END_PTS, _FIVE_FLAGS, wght, slnt)
