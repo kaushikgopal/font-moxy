@@ -318,6 +318,16 @@ def splitFont(
         reshape_percent_instance(monoFont, fontOptions["Fonts"][instance]["wght"])
         print("\n\t• Reshaped percent (connected slash + corner dots)")
 
+        # Fuller ✓ and • grafted from the reference font, weight- and slant-
+        # matched to this instance. Composites bullet.case and uni2219 reference
+        # 'bullet' as a component, so they inherit.
+        from glyph_tweaks import graft_checkmark_static, graft_bullet_static
+        inst_wght = fontOptions["Fonts"][instance]["wght"]
+        inst_slnt = fontOptions["Fonts"][instance]["slnt"]
+        graft_checkmark_static(monoFont, inst_wght, inst_slnt)
+        graft_bullet_static(monoFont, inst_wght, inst_slnt)
+        print(f"\n\t• Grafted ✓ and • (wght {inst_wght}, slnt {inst_slnt})")
+
         # drop STAT table to allow RIBBI style naming & linking on Windows
         try:
             del monoFont["STAT"]

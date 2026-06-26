@@ -679,12 +679,15 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     # ---- Moxy glyph tweaks, on the raw variable source -----------------------
     # Done first, while each tweaked glyph still carries its full gvar, so the
     # later MONO-pin + default-rebase re-normalise the result cleanly. The
-    # connected % and clean / are baked into Moxy (not configurable).
+    # connected %, clean / and \, and the fuller ✓ and • are baked into Moxy
+    # (not configurable).
     import glyph_tweaks
-    print("Applying glyph tweaks: percent, slash, backslash")
+    print("Applying glyph tweaks: percent, slash, backslash, checkmark, bullet")
     glyph_tweaks.graft_percent(font)
     glyph_tweaks.graft_slash(font)
     glyph_tweaks.graft_backslash(font)
+    glyph_tweaks.graft_checkmark(font)
+    glyph_tweaks.graft_bullet(font)
 
     print(f"Renaming family -> '{FAMILY}'")
     rename_family(font, font_version(src_path))

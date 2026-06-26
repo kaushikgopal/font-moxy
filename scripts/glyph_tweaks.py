@@ -9,10 +9,12 @@ strategies:
   is curve-converted (cu2qu) if needed, scaled into Moxy's 1000-UPM / 600 cell,
   and given weight + slant variation.
 
-The ``%`` (connected diagonal) and ``/`` (clean straight slash) are baked in:
-``graft_percent`` and ``graft_slash`` are called unconditionally from the
-variable-font build, so they're just part of Moxy's design, not a configurable
-option.
+The following grafts are baked in (called unconditionally from the builds, so
+they're part of Moxy's design, not a configurable option): ``%`` (connected
+diagonal), ``/`` and ``\\`` (clean straight slashes), ``✓`` (fuller check mark)
+and ``•`` (fuller bullet). The variable-font build rebuilds gvar from the
+reference masters; the static build interpolates those same masters by the
+instance's weight and shears for italic.
 """
 
 from __future__ import annotations
@@ -423,3 +425,61 @@ def graft_backslash(font):
     automatically.
     """
     _graft_glyph_variable(font, "backslash", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
+
+
+def graft_checkmark(font):
+    """Replace ``✓`` (U+2713) with Moxy's fuller check mark.
+
+    Recursive's own check is a brushy 42-point stroke; the grafted one is a
+    clean 6-point check that sits better next to code. No composites reference
+    it.
+    """
+    _graft_glyph_variable(font, "uni2713", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
+
+
+def graft_bullet(font):
+    """Replace ``•`` (U+2022) with Moxy's fuller bullet.
+
+    A fuller circle than Recursive's. The composites ``bullet.case`` and
+    ``uni2219`` (bullet operator) reference ``bullet`` as a component, so they
+    inherit this automatically.
+    """
+    _graft_glyph_variable(font, "bullet", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
+
+
+# --------------------------------------------------------------------------------------
+# Static-build counterparts. The variable build rebuilds gvar from light/heavy
+# masters; the static build is already instanced, so it interpolates those same
+# two masters by the instance's normalised weight and shears for italic.
+
+
+def _graft_glyph_static(font, glyph_name, wght, slnt=0.0):
+    """Static build: replace ``glyph_name`` with the reference outline at the
+    given Recursive weight/slant. Interpolates the light→heavy masters by the
+    weight's normalised position (mirroring ``_graft_glyph_variable``'s wght
+    master) and shears for italic. For an already-instanced font (no gvar)."""
+    light_src, heavy_src = TTFont(_REF_LIGHT), TTFont(_REF_HEAVY)
+    scale = _source_scale(light_src)
+    light, end_pts, flags = _quad_outline(light_src, glyph_name, scale)
+    heavy, end2, _ = _quad_outline(heavy_src, glyph_name, scale)
+    if end_pts != end2 or len(light) != len(heavy):
+        raise ValueError(
+            f"graft masters for {glyph_name!r} not point-compatible: "
+            f"{len(light)} vs {len(heavy)} pts ({end_pts} vs {end2})"
+        )
+    t = _wght_t(wght)
+    coords = [(_lerp(light[i][0], heavy[i][0], t),
+               _lerp(light[i][1], heavy[i][1], t)) for i in range(len(light))]
+    if slnt:
+        coords = _shear(coords, math.tan(math.radians(-slnt)))
+    _write_outline(font, glyph_name, coords, end_pts, flags)
+
+
+def graft_checkmark_static(font, wght, slnt=0.0):
+    """Static build: swap ``✓`` for Moxy's fuller check mark."""
+    _graft_glyph_static(font, "uni2713", wght, slnt)
+
+
+def graft_bullet_static(font, wght, slnt=0.0):
+    """Static build: swap ``•`` for Moxy's fuller bullet."""
+    _graft_glyph_static(font, "bullet", wght, slnt)
