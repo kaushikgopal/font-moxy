@@ -3,25 +3,24 @@
 Moxy adjusts a few of Recursive's glyphs toward shapes Kaush prefers. Two
 strategies:
 
-* **Reshape** — derive the new shape geometrically from Recursive's own outline
-  (no external font, no hand-authored bezier). OFL-clean and shippable.
-* **Draw** — construct the new shape from explicit geometry in this module (a
-  polygon or a circle), point-compatible across masters. OFL-clean and shippable.
+* **Draw** — construct the new shape from explicit geometry in this module
+  (polygons, circles, ellipses), point-compatible across masters. OFL-clean and
+  shippable. (``reshape_percent_outline`` is a kept variant that derives geometry
+  from Recursive's own outline; it's no longer wired into the builds.)
 * **Graft** — replace the glyph with one borrowed from another font. The outline
   is curve-converted (cu2qu) if needed, scaled into Moxy's 1000-UPM / 600 cell,
   and given weight + slant variation.
 
 Baked-in tweaks (called unconditionally from the builds, not a configurable
 option):
-  * ``%`` (connected diagonal), ``/`` and ``\\`` (clean straight slashes), and
-    ``@`` ``&`` ``$`` (reference at-sign, ampersand, dollar) — grafted from a
-    reference font. ``@`` ``&`` ``$`` use a single-master graft (slant-only
-    variation) because the reference font's weight masters aren't point-
-    compatible for those glyphs.
-  * ``✓`` (fuller check mark) and ``•`` (fuller bullet) — drawn directly from
-    explicit geometry, so no external outline data is read or shipped (OFL-clean,
-    like the percent reshape). The shapes match SF Mono's — a clean 6-point check
-    and a true circle — reconstructed here, not borrowed.
+  * ``%`` (slash + two oval ring dots), ``/`` and ``\\`` (clean straight
+    slashes), ``✓`` (fuller 6-point check) and ``•`` (fuller circle) — drawn
+    directly from explicit geometry, so no external outline data is read or
+    shipped (OFL-clean). The shapes match SF Mono's, reconstructed here, not
+    borrowed.
+  * ``@`` ``&`` ``$`` (reference at-sign, ampersand, dollar) — still grafted from
+    a reference font, single-master (slant-only variation) because the reference
+    font's weight masters aren't point-compatible for those glyphs.
 
 For both grafts and draws, the variable build installs gvar masters and the
 static build interpolates/shears per instance.
@@ -416,37 +415,22 @@ def graft_glyphs_jetbrains(font, glyph_names, jb_vf=None):
 
 
 # --------------------------------------------------------------------------------------
-# Baked-in Moxy glyph tweaks. Called unconditionally from the variable-font build.
-
-def graft_percent(font):
-    """Replace ``%`` with Moxy's connected diagonal design."""
-    _graft_glyph_variable(font, "percent", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
-
-
-def graft_slash(font):
-    """Replace ``/`` with Moxy's clean straight slash (no brushy flair)."""
-    _graft_glyph_variable(font, "slash", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
-
-
-def graft_backslash(font):
-    """Replace ``\\`` with Moxy's clean straight backslash (no brushy flair).
-
-    All composites (backslash.code, .case, and the \\b \\n \\r \\t \\v escape
-    ligatures) reference ``backslash`` as a component, so they inherit this
-    automatically.
-    """
-    _graft_glyph_variable(font, "backslash", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
+# Baked-in Moxy glyph tweaks. Called unconditionally from the builds.
+#
+# ``%`` ``/`` ``\\`` are drawn below (with ``✓`` and ``•``), all OFL-clean
+# geometry. ``@`` ``&`` ``$`` are still grafted from the reference font (further
+# down).
 
 
 # --------------------------------------------------------------------------------------
-# Fuller ✓ and • — DRAWN directly (pure geometry), not grafted.
+# Fuller ✓ and •, clean / and \, and SF-Mono-style % — DRAWN directly (pure
+# geometry), not grafted.
 #
-# The shapes match SF Mono's check and bullet (measured once, cap-scaled into
-# Moxy's 700-cap / 600 cell), but are reconstructed from the explicit coordinates
-# below — nothing is read from, or shipped out of, any external font. This keeps
-# them OFL-clean, exactly like the percent reshape. Two point-compatible masters
-# (Regular + Heavy) give the weight variation; the italic master is the upright
-# sheared by Recursive's ~15° lean.
+# The shapes match SF Mono's (measured once, cap-scaled into Moxy's 700-cap / 600
+# cell), but are reconstructed from the explicit coordinates below — nothing is
+# read from, or shipped out of, any external font. This keeps them OFL-clean.
+# Two point-compatible masters (Regular + Heavy) give the weight variation; the
+# italic master is the upright sheared by Recursive's ~15° lean.
 
 # ✓ (U+2713): a clean 6-point checkmark (all straight edges). The bottom point,
 # the right tip and the left tip (P1/P2/P6) hold across weight; the inner edge
@@ -468,6 +452,18 @@ _CHECK_FLAGS = [1] * 6  # every point on-curve (straight edges)
 _BULLET_CX = 300.0
 _BULLET_LIGHT = (310.5, 205.0)   # (centre-y, radius)
 _BULLET_HEAVY = (311.9, 226.1)
+
+# / (slash) and \ (backslash): a clean 4-point parallelogram (one slanted stroke,
+# no brushy flair). Corners measured from SF Mono (Regular → Heavy), cap-scaled
+# and centred in the cell; the stroke thickens with weight. Backslash is the
+# mirror; its composites (backslash.code, .case, the \b \n \r \t \v escape
+# ligatures) reference ``backslash``, so they inherit.
+_SLASH_LIGHT = [(169.5, -66.5), (511.0, 766.5), (430.0, 766.5), (89.0, -66.5)]
+_SLASH_HEAVY = [(223.8, -131.0), (549.3, 831.0), (371.3, 831.0), (50.7, -131.0)]
+_BACKSLASH_LIGHT = [(430.5, -66.5), (511.0, -66.5), (170.0, 766.5), (89.0, 766.5)]
+_BACKSLASH_HEAVY = [(376.2, -131.0), (549.3, -131.0), (228.7, 831.0), (50.7, 831.0)]
+_SLASH_END_PTS = [3]
+_SLASH_FLAGS = [1] * 4  # every point on-curve (straight edges)
 
 
 def _circle_quad(cx, cy, r, segments=8):
@@ -491,11 +487,59 @@ def _circle_quad(cx, cy, r, segments=8):
     return coords, flags
 
 
+def _ellipse_quad(cx, cy, rx, ry, segments=8, clockwise=True):
+    """An ellipse as a TrueType quadratic contour (like ``_circle_quad`` but with
+    separate rx/ry and a winding direction). Counters pass ``clockwise=False`` so
+    they wind opposite the outer ring and cut a hole under non-zero fill."""
+    coords, flags = [], []
+    step = 2 * math.pi / segments
+    kc = 1.0 / math.cos(step / 2)                       # bisector control scale
+    for i in range(segments):
+        a = (-i if clockwise else i) * step
+        coords.append((cx + rx * math.cos(a), cy + ry * math.sin(a)))
+        flags.append(1)                                 # on-curve
+        ac = a + (-step / 2 if clockwise else step / 2)
+        coords.append((cx + rx * kc * math.cos(ac), cy + ry * kc * math.sin(ac)))
+        flags.append(0)                                 # off-curve control
+    return coords, flags
+
+
 def _bullet_master(spec):
     """Build one bullet master (coords, end_pts, flags) from a (cy, r) spec."""
     cy, r = spec
     coords, flags = _circle_quad(_BULLET_CX, cy, r)
     return coords, [len(coords) - 1], flags
+
+
+# % (U+0025): SF Mono style — a diagonal slash plus two vertical-oval ring dots
+# (each an outer ellipse with an inner counter), point-symmetric about the cell
+# centre. Measured from SF Mono (Regular → Heavy); the counters shrink as the
+# ring wall thickens with weight. Each spec: a 4-corner slash + four ellipses
+# ordered (top-left outer, top-left inner, bottom-right outer, bottom-right inner).
+_PERCENT_LIGHT = dict(
+    slash=[(607.1, 700.0), (-7.1, 75.2), (-7.1, 0.0), (607.1, 624.8)],
+    rings=[(127.1, 535.8, 132.7, 173.4), (127.1, 535.8, 70.6, 112.3),
+           (472.9, 164.2, 132.7, 173.4), (472.9, 164.2, 70.6, 112.3)],
+)
+_PERCENT_HEAVY = dict(
+    slash=[(607.1, 700.0), (-7.1, 77.1), (-7.1, 0.0), (607.1, 622.9)],
+    rings=[(150.1, 539.7, 147.5, 179.2), (150.1, 539.7, 46.6, 83.4),
+           (449.9, 159.4, 147.5, 179.2), (449.9, 159.4, 46.6, 83.4)],
+)
+
+
+def _percent_master(spec, segments=8):
+    """Build % (coords, end_pts, flags) from a spec. Outer rings wind clockwise;
+    inner counters wind opposite so they cut holes. Slash is a 4-point bar."""
+    coords, flags, end_pts = [], [], []
+    for j, (cx, cy, rx, ry) in enumerate(spec["rings"]):
+        inner = (j % 2 == 1)
+        ec, ef = _ellipse_quad(cx, cy, rx, ry, segments, clockwise=not inner)
+        coords += ec; flags += ef; end_pts.append(len(coords) - 1)
+    for p in spec["slash"]:
+        coords.append(p); flags.append(1)
+    end_pts.append(len(coords) - 1)
+    return coords, end_pts, flags
 
 
 def _draw_glyph_variable(font, glyph_name, light, heavy, end_pts, flags):
@@ -532,6 +576,29 @@ def draw_bullet(font):
     _draw_glyph_variable(font, "bullet", light, heavy, end_pts, flags)
 
 
+def draw_slash(font):
+    """Variable build: draw ``/`` as Moxy's clean straight slash (no brushy
+    flair) — a 4-point parallelogram that thickens with weight."""
+    _draw_glyph_variable(font, "slash", _SLASH_LIGHT, _SLASH_HEAVY,
+                         _SLASH_END_PTS, _SLASH_FLAGS)
+
+
+def draw_backslash(font):
+    """Variable build: draw ``\\`` as Moxy's clean straight backslash.
+
+    The composites (backslash.code, .case, and the \\b \\n \\r \\t \\v escape
+    ligatures) reference ``backslash`` as a component, so they inherit."""
+    _draw_glyph_variable(font, "backslash", _BACKSLASH_LIGHT, _BACKSLASH_HEAVY,
+                         _SLASH_END_PTS, _SLASH_FLAGS)
+
+
+def draw_percent(font):
+    """Variable build: draw ``%`` as SF Mono's slash + two oval ring dots."""
+    light, end_pts, flags = _percent_master(_PERCENT_LIGHT)
+    heavy, _, _ = _percent_master(_PERCENT_HEAVY)
+    _draw_glyph_variable(font, "percent", light, heavy, end_pts, flags)
+
+
 def _graft_glyph_single_master_variable(font, glyph_name, src_font):
     """Replace ``glyph_name`` with a single reference outline — no weight
     variation, only slant. Used when the reference font's weight masters aren't
@@ -566,31 +633,8 @@ def graft_dollar(font):
 
 
 # --------------------------------------------------------------------------------------
-# Static-build counterparts. The variable build rebuilds gvar from light/heavy
-# masters; the static build is already instanced, so it interpolates those same
-# two masters by the instance's normalised weight and shears for italic.
-
-
-def _graft_glyph_static(font, glyph_name, wght, slnt=0.0):
-    """Static build: replace ``glyph_name`` with the reference outline at the
-    given Recursive weight/slant. Interpolates the light→heavy masters by the
-    weight's normalised position (mirroring ``_graft_glyph_variable``'s wght
-    master) and shears for italic. For an already-instanced font (no gvar)."""
-    light_src, heavy_src = TTFont(_REF_LIGHT), TTFont(_REF_HEAVY)
-    scale = _source_scale(light_src)
-    light, end_pts, flags = _quad_outline(light_src, glyph_name, scale)
-    heavy, end2, _ = _quad_outline(heavy_src, glyph_name, scale)
-    if end_pts != end2 or len(light) != len(heavy):
-        raise ValueError(
-            f"graft masters for {glyph_name!r} not point-compatible: "
-            f"{len(light)} vs {len(heavy)} pts ({end_pts} vs {end2})"
-        )
-    t = _wght_t(wght)
-    coords = [(_lerp(light[i][0], heavy[i][0], t),
-               _lerp(light[i][1], heavy[i][1], t)) for i in range(len(light))]
-    if slnt:
-        coords = _shear(coords, math.tan(math.radians(-slnt)))
-    _write_outline(font, glyph_name, coords, end_pts, flags)
+# Static-build counterparts (already-instanced font, no gvar): interpolate the
+# light/heavy masters by the instance's normalised weight and shear for italic.
 
 
 def _draw_glyph_static(font, glyph_name, light, heavy, end_pts, flags, wght, slnt=0.0):
@@ -618,23 +662,26 @@ def draw_bullet_static(font, wght, slnt=0.0):
     _draw_glyph_static(font, "bullet", light, heavy, end_pts, flags, wght, slnt)
 
 
-def graft_percent_static(font, wght, slnt=0.0):
-    """Static build: swap ``%`` for Moxy's connected diagonal design."""
-    _graft_glyph_static(font, "percent", wght, slnt)
+def draw_slash_static(font, wght, slnt=0.0):
+    """Static build: draw ``/`` at the instance's weight/slant."""
+    _draw_glyph_static(font, "slash", _SLASH_LIGHT, _SLASH_HEAVY,
+                       _SLASH_END_PTS, _SLASH_FLAGS, wght, slnt)
 
 
-def graft_slash_static(font, wght, slnt=0.0):
-    """Static build: swap ``/`` for Moxy's clean straight slash."""
-    _graft_glyph_static(font, "slash", wght, slnt)
+def draw_backslash_static(font, wght, slnt=0.0):
+    """Static build: draw ``\\`` at the instance's weight/slant.
+
+    Composites (backslash.code, .case, escape ligatures) reference
+    ``backslash`` as a component, so they inherit."""
+    _draw_glyph_static(font, "backslash", _BACKSLASH_LIGHT, _BACKSLASH_HEAVY,
+                       _SLASH_END_PTS, _SLASH_FLAGS, wght, slnt)
 
 
-def graft_backslash_static(font, wght, slnt=0.0):
-    """Static build: swap ``\\`` for Moxy's clean straight backslash.
-
-    Composites (backslash.code, .case, and the escape ligatures) reference
-    ``backslash`` as a component, so they inherit automatically.
-    """
-    _graft_glyph_static(font, "backslash", wght, slnt)
+def draw_percent_static(font, wght, slnt=0.0):
+    """Static build: draw ``%`` at the instance's weight/slant."""
+    light, end_pts, flags = _percent_master(_PERCENT_LIGHT)
+    heavy, _, _ = _percent_master(_PERCENT_HEAVY)
+    _draw_glyph_static(font, "percent", light, heavy, end_pts, flags, wght, slnt)
 
 
 def _pick_ref_static(wght):

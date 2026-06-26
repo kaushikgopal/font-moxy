@@ -310,27 +310,27 @@ def splitFont(
             )
 
         # -------------------------------------------------------
-        # %, /, \, @, &, $ grafted from the reference font; ✓ and • drawn
-        # directly (OFL-clean geometry). All weight- and slant-matched to this
-        # instance — the same shapes the variable-font build uses. Composites
+        # %, /, \, ✓, • drawn directly (OFL-clean geometry); @, &, $ grafted
+        # from the reference font. All weight- and slant-matched to this instance
+        # — the same shapes the variable-font build uses. Composites
         # (backslash.code, .case, escape ligatures, bullet.case, uni2219, at.case)
         # reference these as components, so they inherit.
         from glyph_tweaks import (
-            graft_percent_static, graft_slash_static, graft_backslash_static,
+            draw_percent_static, draw_slash_static, draw_backslash_static,
             draw_checkmark_static, draw_bullet_static,
             graft_at_static, graft_ampersand_static, graft_dollar_static,
         )
         inst_wght = fontOptions["Fonts"][instance]["wght"]
         inst_slnt = fontOptions["Fonts"][instance]["slnt"]
-        graft_percent_static(monoFont, inst_wght, inst_slnt)
-        graft_slash_static(monoFont, inst_wght, inst_slnt)
-        graft_backslash_static(monoFont, inst_wght, inst_slnt)
+        draw_percent_static(monoFont, inst_wght, inst_slnt)
+        draw_slash_static(monoFont, inst_wght, inst_slnt)
+        draw_backslash_static(monoFont, inst_wght, inst_slnt)
         draw_checkmark_static(monoFont, inst_wght, inst_slnt)
         draw_bullet_static(monoFont, inst_wght, inst_slnt)
         graft_at_static(monoFont, inst_wght, inst_slnt)
         graft_ampersand_static(monoFont, inst_wght, inst_slnt)
         graft_dollar_static(monoFont, inst_wght, inst_slnt)
-        print(f"\n\t• Grafted %, /, \\, @, &, $ and drew ✓, • (wght {inst_wght}, slnt {inst_slnt})")
+        print(f"\n\t• Drew %, /, \\, ✓, • and grafted @, &, $ (wght {inst_wght}, slnt {inst_slnt})")
 
         # drop STAT table to allow RIBBI style naming & linking on Windows
         try:
