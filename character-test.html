@@ -45,6 +45,7 @@
   .legend .pill{display:inline-flex; align-items:center; gap:6px;}
   .dot{width:10px; height:10px; border-radius:50%; display:inline-block;}
   .dot.moxy{background:var(--moxy);} .dot.rec{background:var(--rec);}
+  .dot.sf{background:#999;}
 
   /* glyph rendering: Moxy = full look (moxy + lilx on, calt on, Linear);
      Recursive = plain, monospaced (MONO=1, Linear). --w sets the weight. */
@@ -77,7 +78,10 @@
   .tag{display:inline-block; font:700 9px/1 var(--font); padding:3px 7px; border-radius:20px;
        color:#fff; letter-spacing:.02em;}
   .tag.moxy{background:var(--moxy);} .tag.rec{background:var(--rec);}
+  .tag.sf{background:#999;}
   .rec-row td,.rec-cell{background:var(--zebra);}
+  .sf-row td{background:rgba(127,127,127,.10);}
+  .glyph-sf{font-family:"SF Mono",ui-monospace,monospace; font-weight:var(--w,400);}
   .cell{display:block; padding:12px 4px; font-size:52px; line-height:1.1;}
   .absent{color:var(--muted); font:400 16px/1 var(--font); display:inline-block;
           padding:12px 0; opacity:.7;}
@@ -133,6 +137,7 @@
 <div class="legend">
   <span class="pill"><span class="dot moxy"></span> Moxy — <code>moxy</code> + <code>lilx</code> on (full look)</span>
   <span class="pill"><span class="dot rec"></span> Recursive — plain, <code>MONO=1</code> (monospaced)</span>
+  <span class="pill"><span class="dot sf"></span> SF Mono — system font reference</span>
   <span class="pill">both at <code>CASL=0</code> (Linear), weights 300–900</span>
 </div>
 
@@ -175,8 +180,9 @@ when it's an escape (<code>\n</code>, <code>\\</code> — the 1st of a pair thin
 
 <h3>Directly drawn — SF Mono–inspired</h3>
 <p class="caption">Drawn from scratch (OFL-clean) and always-on in both VF and static. These override
-Recursive's own <code>✓ • / \ % $ @ &amp;</code> and the numerals <code>2 4 5 7</code>. The single- and
-two-master glyphs thicken with weight; <code>$ @ &amp;</code> stay constant by design.</p>
+Recursive's own <code>✓ • / \ % $ @ &amp;</code> and the numerals <code>2 4 5 7</code>. All are
+two-master — they thicken with weight. The <span class="tag sf">SF</span> row shows SF Mono
+(system font) for reference — the target aesthetic.</p>
 <div class="scroll">
 <table class="grid">
   <thead><tr><th>glyph</th><th class="tagcol"></th><th>300</th><th>400</th><th>500</th><th>600</th><th>700</th><th>800</th><th>900</th></tr></thead>
@@ -287,13 +293,14 @@ function esc(s){
   return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-function buildGrid(rows, tbodyId){
+function buildGrid(rows, tbodyId, includeSf){
   const tbody = document.getElementById(tbodyId);
   const frag = document.createDocumentFragment();
   for(const r of rows){
+    const rowspan = includeSf ? 3 : 2;
     const tr1 = document.createElement("tr");
     tr1.innerHTML =
-      `<td class="lbl" rowspan="2">
+      `<td class="lbl" rowspan="${rowspan}">
          <span class="ch">${esc(r.ch)}</span>
          <span class="nm">${r.name}</span>
          <span class="cp">${r.cp}</span>
@@ -315,6 +322,17 @@ function buildGrid(rows, tbodyId){
 
     frag.appendChild(tr1);
     frag.appendChild(tr2);
+
+    if(includeSf){
+      const tr3 = document.createElement("tr");
+      tr3.className = "sf-row";
+      tr3.innerHTML =
+        `<td><span class="tag sf">SF</span></td>` +
+        WEIGHTS.map(w =>
+          `<td><span class="cell glyph-sf" style="--w:${w}">${esc(r.ch)}</span></td>`
+        ).join("");
+      frag.appendChild(tr3);
+    }
   }
   tbody.appendChild(frag);
 }
@@ -344,7 +362,7 @@ function buildMatrix(){
 
 buildGrid(PARENS,  "g-parens");
 buildGrid(ARROWS,  "g-arrows");
-buildGrid(DRAWN,   "g-drawn");
+buildGrid(DRAWN,   "g-drawn", true);
 buildCtx(CTX,      "g-ctx");
 buildMatrix();
 

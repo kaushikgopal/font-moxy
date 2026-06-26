@@ -553,6 +553,23 @@ _DOLLAR_LIGHT = [
     (465.4, 185.3), (465.4, 150.9), (432.4, 97.0), (372.8, 63.1),
     (332.5, 58.2), (332.5, 309.5), (402.8, 291.5), (465.4, 232.8),
 ]
+_DOLLAR_HEAVY = [
+    (18.2, 194.5), (20.6, 133.4), (83.6, 41.2), (194.7, -12.6),
+    (269.9, -17.0), (269.9, -68.4), (338.3, -68.4), (338.3, -16.5),
+    (414.5, -10.2), (523.1, 47.5), (581.8, 144.6), (581.8, 209.6),
+    (581.8, 264.4), (539.6, 342.0), (451.4, 393.9), (338.3, 417.7),
+    (338.3, 417.7), (338.3, 595.7), (377.1, 587.9), (427.1, 541.4),
+    (431.5, 506.9), (569.2, 506.9), (567.3, 564.7), (508.1, 654.4),
+    (405.8, 710.2), (338.3, 716.5), (338.3, 768.4), (269.9, 768.4),
+    (269.9, 717.0), (198.1, 711.6), (92.4, 654.9), (34.2, 560.8),
+    (34.2, 499.2), (34.2, 499.2), (224.3, 299.3), (269.9, 289.6),
+    (269.9, 289.6), (269.9, 103.8), (222.9, 110.6), (222.9, 110.6),
+    (164.2, 158.6), (159.8, 194.5),
+    (181.2, 511.8), (181.2, 545.3), (228.7, 590.4), (269.9, 596.7),
+    (269.9, 432.7), (222.9, 445.3), (181.2, 483.2),
+    (435.8, 191.1), (435.8, 157.2), (382.5, 110.6), (382.5, 110.6),
+    (338.3, 103.8), (338.3, 274.6), (390.2, 261.0), (435.8, 221.2),
+]
 _DOLLAR_END_PTS = [41, 48, 56]
 _DOLLAR_FLAGS = [
     1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1,
@@ -565,17 +582,18 @@ _DOLLAR_FLAGS = [
 def draw_dollar(font):
     """Variable build: draw ``$`` (U+0024) as Moxy's reference dollar sign.
 
-    Single master (constant across wght; italic shears) — the reference design's
-    weight masters aren't point-compatible for this glyph. Replaces the prior
-    graft with hardcoded geometry (OFL-clean)."""
-    _draw_glyph_variable(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_LIGHT,
+    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
+    so Bold thickens. OFL-clean hardcoded geometry."""
+    _draw_glyph_variable(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_HEAVY,
                          _DOLLAR_END_PTS, _DOLLAR_FLAGS)
 
 
 # @ (U+0040): the modern single-contour spiral at-sign — one continuous path
 # that forms the outer ring, swings in to become the inner counter wall, and
-# curls into the central tail. Derived from a reference outline (cap-scaled into
-# the 600 cell). 1 contour, 50 points.
+# curls into the central tail. Two-master (1 contour, 50 points). The heavy
+# master is hand-built from the Regular's topology with coordinates mapped from
+# the reference Heavy. Bold thickens. The composite ``at.case`` references
+# ``at`` as a component, so it inherits.
 _AT_LIGHT = [
     (310.9, -96.0), (346.8, -96.0), (412.3, -85.4), (429.8, -77.1),
     (429.8, -19.9), (419.6, -24.7), (384.2, -33.0), (341.5, -37.4),
@@ -591,6 +609,21 @@ _AT_LIGHT = [
     (176.5, 715.5), (44.6, 531.2), (44.6, 354.1), (44.6, 263.4),
     (44.6, 86.3), (179.9, -96.0),
 ]
+_AT_HEAVY = [
+    (326.7, -101.4), (345.1, -101.4), (421.8, -89.7), (432.9, -85.4),
+    (419.3, -11.6), (419.3, -11.6), (363.5, -17.9), (330.1, -17.9),
+    (330.1, -17.9), (193.3, 16.0), (143.3, 89.7), (120.5, 292.0),
+    (120.5, 332.8), (140.4, 530.7), (253.9, 634.5), (304.4, 634.5),
+    (368.9, 634.5), (448.0, 579.2), (484.3, 360.4), (484.3, 245.9),
+    (484.3, 245.9), (462.0, 199.9), (436.3, 199.9), (379.6, 199.9),
+    (379.6, 418.2), (379.6, 418.2), (343.2, 490.9), (313.1, 490.9),
+    (283.5, 490.9), (246.6, 418.2), (246.6, 418.2), (246.6, 199.4),
+    (246.6, 166.9), (283.5, 126.6), (313.1, 126.6), (458.1, 126.6),
+    (513.0, 126.6), (569.7, 192.6), (569.7, 255.6), (569.7, 381.8),
+    (569.7, 553.0), (448.0, 579.2), (440.2, 718.9), (305.8, 718.9),
+    (210.7, 718.9), (30.3, 462.8), (30.3, 327.4), (30.3, 282.3),
+    (30.3, 149.4), (223.8, -101.4),
+]
 _AT_END_PTS = [49]
 _AT_FLAGS = [
     1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1,
@@ -602,17 +635,18 @@ _AT_FLAGS = [
 def draw_at(font):
     """Variable build: draw ``@`` (U+0040) as Moxy's reference at-sign (spiral).
 
-    Single master (constant across wght; italic shears). Replaces the prior SF
-    Mono graft with hardcoded geometry (OFL-clean). The composite ``at.case``
+    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
+    so Bold thickens. OFL-clean hardcoded geometry. The composite ``at.case``
     references ``at`` as a component, so it inherits."""
-    _draw_glyph_variable(font, "at", _AT_LIGHT, _AT_LIGHT,
+    _draw_glyph_variable(font, "at", _AT_LIGHT, _AT_HEAVY,
                          _AT_END_PTS, _AT_FLAGS)
 
 
 # & (U+0026): the intricate ampersand — a figure-eight "et" shape with two
-# enclosed counters (the upper loop and the lower loop). Derived from a
-# reference outline (cap-scaled into the 600 cell). 3 contours: outer body, upper-loop
-# counter, lower-loop counter (counters wind opposite the outer).
+# enclosed counters (the upper loop and the lower loop). Two-master (3 contours,
+# 64 points). The heavy master is hand-built from the Regular's topology with
+# coordinates mapped from the reference Heavy. Bold thickens. Counters wind
+# opposite the outer so non-zero fill cuts the holes.
 _AMP_LIGHT = [
     # contour 0 — outer body (points 0..36)
     (482.6, 0.0), (578.7, 0.0), (470.5, 131.5), (495.3, 174.6),
@@ -635,6 +669,25 @@ _AMP_LIGHT = [
     (279.9, 59.7), (232.8, 59.7), (193.0, 59.7), (132.4, 91.2),
     (98.9, 148.0), (98.9, 185.3), (98.9, 228.5), (144.5, 298.3),
 ]
+_AMP_HEAVY = [
+    (433.6, 0.0), (596.5, 12.2), (486.0, 150.2), (506.7, 181.4),
+    (531.3, 249.7), (541.3, 310.1), (541.3, 346.1), (465.5, 362.4),
+    (411.3, 349.8), (411.3, 322.7), (405.7, 281.4), (399.2, 267.0),
+    (307.5, 372.6), (367.3, 416.0), (422.0, 507.3), (422.0, 559.9),
+    (406.8, 621.7), (342.6, 689.4), (269.0, 714.1), (210.3, 714.1),
+    (130.3, 685.9), (65.8, 615.5), (53.8, 555.8), (53.8, 509.4),
+    (92.6, 424.9), (130.8, 380.2), (93.5, 357.8), (33.6, 307.2),
+    (-6.8, 219.4), (-6.8, 162.4), (9.2, 102.4), (58.9, 36.4),
+    (135.6, -4.5), (196.9, -14.1), (251.8, -14.1), (349.4, 15.7),
+    (392.9, 47.1),
+    (237.7, 595.7), (255.6, 595.7), (277.4, 578.5), (290.1, 557.3),
+    (290.1, 539.0), (290.1, 520.7), (269.3, 485.1), (248.6, 462.3),
+    (229.3, 460.0), (210.0, 480.7), (189.1, 517.3), (185.3, 535.8),
+    (185.3, 552.3), (191.7, 572.1), (215.3, 595.7),
+    (187.2, 279.9), (197.8, 287.4), (298.1, 170.3), (294.0, 120.1),
+    (250.9, 111.1), (217.6, 111.1), (187.1, 121.2), (156.4, 147.5),
+    (141.6, 179.1), (141.6, 201.8), (143.9, 225.7), (166.4, 266.3),
+]
 _AMP_END_PTS = [36, 51, 63]
 _AMP_FLAGS = [
     1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1,
@@ -647,9 +700,9 @@ _AMP_FLAGS = [
 def draw_ampersand(font):
     """Variable build: draw ``&`` (U+0026) as Moxy's reference ampersand.
 
-    Single master (constant across wght; italic shears). Replaces the prior SF
-    Mono graft with hardcoded geometry (OFL-clean)."""
-    _draw_glyph_variable(font, "ampersand", _AMP_LIGHT, _AMP_LIGHT,
+    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
+    so Bold thickens. OFL-clean hardcoded geometry."""
+    _draw_glyph_variable(font, "ampersand", _AMP_LIGHT, _AMP_HEAVY,
                          _AMP_END_PTS, _AMP_FLAGS)
 
 
@@ -856,22 +909,22 @@ def draw_percent_static(font, wght, slnt=0.0):
 
 
 def draw_dollar_static(font, wght, slnt=0.0):
-    """Static build: draw ``$`` at the instance's slant (single master)."""
-    _draw_glyph_static(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_LIGHT,
+    """Static build: draw ``$`` at the instance's weight/slant (two-master)."""
+    _draw_glyph_static(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_HEAVY,
                        _DOLLAR_END_PTS, _DOLLAR_FLAGS, wght, slnt)
 
 
 def draw_at_static(font, wght, slnt=0.0):
-    """Static build: draw ``@`` at the instance's slant (single master).
+    """Static build: draw ``@`` at the instance's weight/slant (two-master).
 
     The composite ``at.case`` references ``at`` as a component, so it inherits."""
-    _draw_glyph_static(font, "at", _AT_LIGHT, _AT_LIGHT,
+    _draw_glyph_static(font, "at", _AT_LIGHT, _AT_HEAVY,
                        _AT_END_PTS, _AT_FLAGS, wght, slnt)
 
 
 def draw_ampersand_static(font, wght, slnt=0.0):
-    """Static build: draw ``&`` at the instance's slant (single master)."""
-    _draw_glyph_static(font, "ampersand", _AMP_LIGHT, _AMP_LIGHT,
+    """Static build: draw ``&`` at the instance's weight/slant (two-master)."""
+    _draw_glyph_static(font, "ampersand", _AMP_LIGHT, _AMP_HEAVY,
                        _AMP_END_PTS, _AMP_FLAGS, wght, slnt)
 
 
