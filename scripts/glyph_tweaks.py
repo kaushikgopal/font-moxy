@@ -5,19 +5,26 @@ strategies:
 
 * **Reshape** — derive the new shape geometrically from Recursive's own outline
   (no external font, no hand-authored bezier). OFL-clean and shippable.
+* **Draw** — construct the new shape from explicit geometry in this module (a
+  polygon or a circle), point-compatible across masters. OFL-clean and shippable.
 * **Graft** — replace the glyph with one borrowed from another font. The outline
   is curve-converted (cu2qu) if needed, scaled into Moxy's 1000-UPM / 600 cell,
   and given weight + slant variation.
 
-The following grafts are baked in (called unconditionally from the builds, so
-they're part of Moxy's design, not a configurable option): ``%`` (connected
-diagonal), ``/`` and ``\\`` (clean straight slashes), ``✓`` (fuller check mark),
-``•`` (fuller bullet), and ``@`` ``&`` ``$`` (reference at-sign, ampersand, and
-dollar). The variable-font build rebuilds gvar from the reference masters; the
-static build interpolates those same masters by the instance's weight and shears
-for italic. ``@`` ``&`` ``$`` use a single-master graft (slant-only variation)
-because the reference font's weight masters aren't point-compatible for those
-glyphs.
+Baked-in tweaks (called unconditionally from the builds, not a configurable
+option):
+  * ``%`` (connected diagonal), ``/`` and ``\\`` (clean straight slashes), and
+    ``@`` ``&`` ``$`` (reference at-sign, ampersand, dollar) — grafted from a
+    reference font. ``@`` ``&`` ``$`` use a single-master graft (slant-only
+    variation) because the reference font's weight masters aren't point-
+    compatible for those glyphs.
+  * ``✓`` (fuller check mark) and ``•`` (fuller bullet) — drawn directly from
+    explicit geometry, so no external outline data is read or shipped (OFL-clean,
+    like the percent reshape). The shapes match SF Mono's — a clean 6-point check
+    and a true circle — reconstructed here, not borrowed.
+
+For both grafts and draws, the variable build installs gvar masters and the
+static build interpolates/shears per instance.
 """
 
 from __future__ import annotations
@@ -431,24 +438,98 @@ def graft_backslash(font):
     _graft_glyph_variable(font, "backslash", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
 
 
-def graft_checkmark(font):
-    """Replace ``✓`` (U+2713) with Moxy's fuller check mark.
+# --------------------------------------------------------------------------------------
+# Fuller ✓ and • — DRAWN directly (pure geometry), not grafted.
+#
+# The shapes match SF Mono's check and bullet (measured once, cap-scaled into
+# Moxy's 700-cap / 600 cell), but are reconstructed from the explicit coordinates
+# below — nothing is read from, or shipped out of, any external font. This keeps
+# them OFL-clean, exactly like the percent reshape. Two point-compatible masters
+# (Regular + Heavy) give the weight variation; the italic master is the upright
+# sheared by Recursive's ~15° lean.
 
-    Recursive's own check is a brushy 42-point stroke; the grafted one is a
-    clean 6-point check that sits better next to code. No composites reference
-    it.
+# ✓ (U+2713): a clean 6-point checkmark (all straight edges). The bottom point,
+# the right tip and the left tip (P1/P2/P6) hold across weight; the inner edge
+# (P3/P4/P5) thickens the stroke from Regular → Heavy.
+_CHECK_LIGHT = [
+    (217.0, 100.0), (607.0, 492.0), (554.0, 548.0),
+    (217.0, 213.0), (46.0, 380.0), (-7.0, 324.0),
+]
+_CHECK_HEAVY = [
+    (217.0, 100.0), (607.0, 492.0), (498.0, 601.0),
+    (217.0, 320.0), (102.0, 433.0), (-7.0, 324.0),
+]
+_CHECK_END_PTS = [5]
+_CHECK_FLAGS = [1] * 6  # every point on-curve (straight edges)
+
+# • (U+2022): a true circle, centred in the 600 cell. Centre-y and radius are
+# measured from SF Mono (Regular → Heavy); drawn as an 8-segment TrueType
+# quadratic, so it stays a perfectly round, point-compatible circle at any weight.
+_BULLET_CX = 300.0
+_BULLET_LIGHT = (310.5, 205.0)   # (centre-y, radius)
+_BULLET_HEAVY = (311.9, 226.1)
+
+
+def _circle_quad(cx, cy, r, segments=8):
+    """A circle as a TrueType quadratic contour, drawn clockwise.
+
+    Places ``segments`` on-curve points evenly around the circle, each followed
+    by one off-curve control on the bisector at radius ``r / cos(pi/segments)``
+    (the tangent-intersection radius) so the quadratic arcs hug the true circle.
+    Returns ``(coords, flags)`` with on/off-curve interleaved.
     """
-    _graft_glyph_variable(font, "uni2713", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
+    coords, flags = [], []
+    step = 2 * math.pi / segments
+    rc = r / math.cos(step / 2)
+    for i in range(segments):
+        a = -i * step                                   # clockwise
+        coords.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+        flags.append(1)                                 # on-curve
+        ac = a - step / 2
+        coords.append((cx + rc * math.cos(ac), cy + rc * math.sin(ac)))
+        flags.append(0)                                 # off-curve control
+    return coords, flags
 
 
-def graft_bullet(font):
-    """Replace ``•`` (U+2022) with Moxy's fuller bullet.
+def _bullet_master(spec):
+    """Build one bullet master (coords, end_pts, flags) from a (cy, r) spec."""
+    cy, r = spec
+    coords, flags = _circle_quad(_BULLET_CX, cy, r)
+    return coords, [len(coords) - 1], flags
 
-    A fuller circle than Recursive's. The composites ``bullet.case`` and
+
+def _draw_glyph_variable(font, glyph_name, light, heavy, end_pts, flags):
+    """Install a drawn glyph + gvar from point-compatible light/heavy masters,
+    varying on wght (light→heavy) and slnt (upright sheared ~15°). The geometry
+    counterpart of ``_graft_glyph_variable`` (no borrowed outline)."""
+    locs = [{}, {"wght": 1.0}, {"slnt": -1.0}, {"wght": 1.0, "slnt": -1.0}]
+    coords_by_loc = {
+        (): light,
+        (("wght", 1.0),): heavy,
+        (("slnt", -1.0),): _shear(light, _SHEAR_15),
+        (("slnt", -1.0), ("wght", 1.0)): _shear(heavy, _SHEAR_15),
+    }
+    _install_variable_glyph(font, glyph_name, locs, coords_by_loc, end_pts, flags)
+
+
+def draw_checkmark(font):
+    """Variable build: draw ``✓`` (U+2713) as Moxy's fuller 6-point check.
+
+    Recursive's own check is a brushy 42-point stroke; this is a clean 6-point
+    check that sits better next to code. No composites reference it."""
+    _draw_glyph_variable(font, "uni2713", _CHECK_LIGHT, _CHECK_HEAVY,
+                         _CHECK_END_PTS, _CHECK_FLAGS)
+
+
+def draw_bullet(font):
+    """Variable build: draw ``•`` (U+2022) as Moxy's fuller circle.
+
+    A fuller, perfectly round bullet. The composites ``bullet.case`` and
     ``uni2219`` (bullet operator) reference ``bullet`` as a component, so they
-    inherit this automatically.
-    """
-    _graft_glyph_variable(font, "bullet", TTFont(_REF_LIGHT), TTFont(_REF_HEAVY))
+    inherit this automatically."""
+    light, end_pts, flags = _bullet_master(_BULLET_LIGHT)
+    heavy, _, _ = _bullet_master(_BULLET_HEAVY)
+    _draw_glyph_variable(font, "bullet", light, heavy, end_pts, flags)
 
 
 def _graft_glyph_single_master_variable(font, glyph_name, src_font):
@@ -512,14 +593,29 @@ def _graft_glyph_static(font, glyph_name, wght, slnt=0.0):
     _write_outline(font, glyph_name, coords, end_pts, flags)
 
 
-def graft_checkmark_static(font, wght, slnt=0.0):
-    """Static build: swap ``✓`` for Moxy's fuller check mark."""
-    _graft_glyph_static(font, "uni2713", wght, slnt)
+def _draw_glyph_static(font, glyph_name, light, heavy, end_pts, flags, wght, slnt=0.0):
+    """Static build: interpolate the light→heavy masters by the instance's
+    normalised weight and shear for italic. For an already-instanced font (no
+    gvar). The static counterpart of ``_draw_glyph_variable``."""
+    t = _wght_t(wght)
+    coords = [(_lerp(light[i][0], heavy[i][0], t),
+               _lerp(light[i][1], heavy[i][1], t)) for i in range(len(light))]
+    if slnt:
+        coords = _shear(coords, math.tan(math.radians(-slnt)))
+    _write_outline(font, glyph_name, coords, end_pts, flags)
 
 
-def graft_bullet_static(font, wght, slnt=0.0):
-    """Static build: swap ``•`` for Moxy's fuller bullet."""
-    _graft_glyph_static(font, "bullet", wght, slnt)
+def draw_checkmark_static(font, wght, slnt=0.0):
+    """Static build: draw ``✓`` at the instance's weight/slant."""
+    _draw_glyph_static(font, "uni2713", _CHECK_LIGHT, _CHECK_HEAVY,
+                       _CHECK_END_PTS, _CHECK_FLAGS, wght, slnt)
+
+
+def draw_bullet_static(font, wght, slnt=0.0):
+    """Static build: draw ``•`` at the instance's weight/slant."""
+    light, end_pts, flags = _bullet_master(_BULLET_LIGHT)
+    heavy, _, _ = _bullet_master(_BULLET_HEAVY)
+    _draw_glyph_static(font, "bullet", light, heavy, end_pts, flags, wght, slnt)
 
 
 def graft_percent_static(font, wght, slnt=0.0):
