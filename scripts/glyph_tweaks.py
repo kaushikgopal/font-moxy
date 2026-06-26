@@ -693,6 +693,35 @@ def draw_two(font):
                          _TWO_END_PTS, _TWO_FLAGS)
 
 
+# 4 (U+0034): an open four — vertical stem, diagonal flag, horizontal crossbar.
+# TWO-master (point-compatible Regular + Heavy), so Bold thickens. 1 contour,
+# 16 points, all on-curve (straight edges). Derived from reference outlines,
+# cap-scaled into the 600 cell.
+_FOUR_LIGHT = [
+    (366.9, 0.0), (445.0, 0.0), (445.0, 148.0), (552.3, 148.0),
+    (552.3, 223.1), (445.5, 223.1), (445.5, 422.0), (367.9, 422.0),
+    (367.9, 222.2), (138.5, 222.2), (138.5, 228.5), (372.8, 700.0),
+    (285.4, 700.0), (47.7, 217.3), (47.7, 148.0), (366.9, 148.0),
+]
+_FOUR_HEAVY = [
+    (328.9, 0.0), (496.7, 0.0), (496.7, 123.2), (579.2, 123.2),
+    (579.2, 255.2), (492.8, 255.2), (492.8, 422.0), (335.7, 422.0),
+    (335.7, 259.0), (209.5, 259.0), (209.5, 269.7), (393.9, 700.0),
+    (214.9, 700.0), (20.8, 258.1), (20.8, 123.2), (328.9, 123.2),
+]
+_FOUR_END_PTS = [15]
+_FOUR_FLAGS = [1] * 16
+
+
+def draw_four(font):
+    """Variable build: draw ``4`` (U+0034) overriding Recursive's numeral.
+
+    Two-master (light = Regular, heavy = Heavy) — point-compatible across
+    weights, so Bold thickens. OFL-clean hardcoded geometry."""
+    _draw_glyph_variable(font, "four", _FOUR_LIGHT, _FOUR_HEAVY,
+                         _FOUR_END_PTS, _FOUR_FLAGS)
+
+
 # --------------------------------------------------------------------------------------
 # Static-build counterparts (already-instanced font, no gvar): interpolate the
 # light/heavy masters by the instance's normalised weight and shear for italic.
@@ -769,3 +798,9 @@ def draw_two_static(font, wght, slnt=0.0):
     """Static build: draw ``2`` at the instance's slant (single master)."""
     _draw_glyph_static(font, "two", _TWO_LIGHT, _TWO_LIGHT,
                        _TWO_END_PTS, _TWO_FLAGS, wght, slnt)
+
+
+def draw_four_static(font, wght, slnt=0.0):
+    """Static build: draw ``4`` at the instance's weight/slant (two-master)."""
+    _draw_glyph_static(font, "four", _FOUR_LIGHT, _FOUR_HEAVY,
+                       _FOUR_END_PTS, _FOUR_FLAGS, wght, slnt)
