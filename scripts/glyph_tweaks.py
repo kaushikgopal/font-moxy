@@ -1,42 +1,32 @@
 """Glyph tweaks for Moxy.
 
-Moxy adjusts a few of Recursive's glyphs toward shapes Kaush prefers. Two
-strategies:
-
-* **Draw** — construct the new shape from explicit geometry in this module
-  (polygons, circles, ellipses), point-compatible across masters. OFL-clean and
-  shippable. (``reshape_percent_outline`` is a kept variant that derives geometry
-  from Recursive's own outline; it's no longer wired into the builds.)
-* **Graft** — replace the glyph with one borrowed from another font. The outline
-  is curve-converted (cu2qu) if needed, scaled into Moxy's 1000-UPM / 600 cell,
-  and given weight + slant variation.
+Moxy adjusts a few of Recursive's glyphs toward shapes Kaush prefers. Each
+adjusted glyph is **drawn** directly from explicit geometry in this module
+(polygons, circles, ellipses, or hardcoded quadratic outlines) — OFL-clean and
+shippable: no outline data is read from, or shipped out of, any external font.
+(``reshape_percent_outline`` is a kept variant that derives geometry from
+Recursive's own outline; it's no longer wired into the builds.)
 
 Baked-in tweaks (called unconditionally from the builds, not a configurable
 option):
   * ``%`` (slash + two oval ring dots), ``/`` and ``\\`` (clean straight
     slashes), ``✓`` (fuller 6-point check), ``•`` (fuller circle), ``$``
-    (dollar sign) and ``@`` (spiral at-sign) — drawn directly from explicit
-    geometry, so no external outline data is read or shipped (OFL-clean). The
-    shapes match SF Mono's, reconstructed here, not borrowed.
-  * ``&`` (reference ampersand) — still grafted from a reference font,
-    single-master (slant-only variation) because the reference font's weight
-    masters aren't point-compatible for that glyph.
+    (dollar sign), ``@`` (spiral at-sign) and ``&`` (ampersand) — all drawn
+    directly from explicit geometry. The shapes match SF Mono's, reconstructed
+    here, not borrowed.
 
-For both grafts and draws, the variable build installs gvar masters and the
-static build interpolates/shears per instance.
+For each drawn glyph, the variable build installs gvar masters and the static
+build interpolates/shears per instance. ``✓`` ``•`` ``/`` ``\\`` ``%`` use two
+point-compatible masters (Regular + Heavy) for full weight variation; ``$``
+``@`` ``&`` are single-master (constant across wght; italic shears ~15°) because
+SF Mono's Regular/Heavy outlines aren't point-compatible for those glyphs.
 """
 
 from __future__ import annotations
 
-import itertools
 import math
-import os
 
-from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables.TupleVariation import TupleVariation
-from fontTools.pens.cu2quPen import Cu2QuPen
-from fontTools.pens.ttGlyphPen import TTGlyphPen
-from fontTools.varLib import instancer
 from fontTools.varLib.models import VariationModel, supportScalar
 
 AXIS_ORDER = ["MONO", "CASL", "wght", "slnt", "CRSV"]
@@ -306,37 +296,10 @@ def rebuild_percent_variable(font):
 
 
 # --------------------------------------------------------------------------------------
-# Grafting a glyph from a reference font, with weight + slant variation. The
-# outline is converted to quadratic if needed, scaled into Moxy's 1000-UPM / 600
-# cell, and sheared to produce the slant master.
+# Italic helper: shear upright coords by Recursive's ~15° lean to produce the
+# slnt (italic) master. Used by the draw helpers below.
 
 _SHEAR_15 = math.tan(math.radians(15))   # Recursive slnt=-15 ≈ 15° forward lean
-_MOXY_CAP = 700.0
-
-
-def _quad_outline(src_font, glyph_name, scale, cell=600, max_err=1.0, xscale=1.0):
-    """Convert a source glyph to quadratic, scale it, and centre it in the cell.
-
-    Returns ``(coords, end_pts, flags)``. cu2qu runs at the source's native scale
-    (so the point structure matches across weights of the same design), then the
-    resulting points are scaled — keeping every master point-compatible. ``xscale``
-    widens the glyph horizontally about its centre (>1 = wider + thicker stems), to
-    fit a narrow source glyph to Moxy's denser cell.
-    """
-    pen_glyph = TTGlyphPen(None)
-    src_font.getGlyphSet()[glyph_name].draw(Cu2QuPen(pen_glyph, max_err))
-    g = pen_glyph.glyph()
-    coords = [(p[0] * scale, p[1] * scale) for p in g.coordinates]
-    if xscale != 1.0:
-        xs = [c[0] for c in coords]
-        cx = (min(xs) + max(xs)) / 2
-        coords = [(cx + (x - cx) * xscale, y) for x, y in coords]
-    flags = list(g.flags)
-    end_pts = list(g.endPtsOfContours)
-    xs = [c[0] for c in coords]
-    dx = (cell - (max(xs) - min(xs))) / 2 - min(xs)   # centre horizontally in the cell
-    coords = [(x + dx, y) for x, y in coords]
-    return coords, end_pts, flags
 
 
 def _shear(coords, shear):
@@ -368,58 +331,11 @@ def _install_variable_glyph(font, glyph_name, locs, coords_by_loc, end_pts, flag
     font["gvar"].variations[glyph_name] = new_variations
 
 
-def _source_scale(src_font):
-    """Uniform scale to map a source font onto Moxy's cap height (700)."""
-    return _MOXY_CAP / src_font["OS/2"].sCapHeight
-
-
-def _graft_glyph_variable(font, glyph_name, light_src, heavy_src, max_err=1.0, xscale=1.0):
-    """Replace ``glyph_name`` with the source's outline, varying on wght (light→
-    heavy masters) and slnt (sheared italic). ``light_src`` / ``heavy_src`` are
-    open TTFonts of the same family (so they're point-compatible after cu2qu).
-    ``xscale`` widens the glyph horizontally (to fit a narrow source to Moxy). The
-    grafted glyph does NOT vary on CASL/CRSV (the source look is constant)."""
-    scale = _source_scale(light_src)
-    light, end_pts, flags = _quad_outline(light_src, glyph_name, scale, max_err=max_err, xscale=xscale)
-    heavy, end2, _ = _quad_outline(heavy_src, glyph_name, scale, max_err=max_err, xscale=xscale)
-    if end_pts != end2 or len(light) != len(heavy):
-        raise ValueError(
-            f"graft masters for {glyph_name!r} not point-compatible: "
-            f"{len(light)} vs {len(heavy)} pts ({end_pts} vs {end2})"
-        )
-    locs = [{}, {"wght": 1.0}, {"slnt": -1.0}, {"wght": 1.0, "slnt": -1.0}]
-    coords_by_loc = {
-        (): light,
-        (("wght", 1.0),): heavy,
-        (("slnt", -1.0),): _shear(light, _SHEAR_15),
-        (("slnt", -1.0), ("wght", 1.0)): _shear(heavy, _SHEAR_15),
-    }
-    _install_variable_glyph(font, glyph_name, locs, coords_by_loc, end_pts, flags)
-
-
-_REF_DIR = "/Library/Fonts"
-_REF_LIGHT = f"{_REF_DIR}/SF-Mono-Regular.otf"
-_REF_HEAVY = f"{_REF_DIR}/SF-Mono-Heavy.otf"
-_REF_SEMIBOLD = f"{_REF_DIR}/SF-Mono-Semibold.otf"
-
-
-def graft_glyphs_jetbrains(font, glyph_names, jb_vf=None):
-    """Graft glyphs from JetBrains Mono (wght 400→800, sheared italic).
-
-    JetBrains Mono is OFL — these grafts may ship (with attribution)."""
-    jb_vf = jb_vf or os.path.expanduser("~/Library/Fonts/JetBrainsMono[wght]-KG.ttf")
-    light = instancer.instantiateVariableFont(TTFont(jb_vf), {"wght": 400}, inplace=False)
-    heavy = instancer.instantiateVariableFont(TTFont(jb_vf), {"wght": 800}, inplace=False)
-    for name in glyph_names:
-        _graft_glyph_variable(font, name, light, heavy)
-
-
 # --------------------------------------------------------------------------------------
 # Baked-in Moxy glyph tweaks. Called unconditionally from the builds.
 #
-# ``%`` ``/`` ``\\`` are drawn below (with ``✓`` and ``•``), all OFL-clean
-# geometry. ``@`` ``&`` ``$`` are still grafted from the reference font (further
-# down).
+# ``%`` ``/`` ``\\`` ``✓`` ``•`` ``$`` ``@`` ``&`` are all drawn below from
+# OFL-clean geometry (no external outline is read or shipped).
 
 
 # --------------------------------------------------------------------------------------
@@ -544,8 +460,8 @@ def _percent_master(spec, segments=8):
 
 def _draw_glyph_variable(font, glyph_name, light, heavy, end_pts, flags):
     """Install a drawn glyph + gvar from point-compatible light/heavy masters,
-    varying on wght (light→heavy) and slnt (upright sheared ~15°). The geometry
-    counterpart of ``_graft_glyph_variable`` (no borrowed outline)."""
+    varying on wght (light→heavy) and slnt (upright sheared ~15°). Pass
+    ``light == heavy`` for a single-master glyph (constant across wght)."""
     locs = [{}, {"wght": 1.0}, {"slnt": -1.0}, {"wght": 1.0, "slnt": -1.0}]
     coords_by_loc = {
         (): light,
@@ -689,24 +605,48 @@ def draw_at(font):
                          _AT_END_PTS, _AT_FLAGS)
 
 
-def _graft_glyph_single_master_variable(font, glyph_name, src_font):
-    """Replace ``glyph_name`` with a single reference outline — no weight
-    variation, only slant. Used when the reference font's weight masters aren't
-    point-compatible for this glyph (so ``_graft_glyph_variable`` can't
-    interpolate). The glyph stays constant across wght; italic still shears."""
-    scale = _source_scale(src_font)
-    base, end_pts, flags = _quad_outline(src_font, glyph_name, scale)
-    locs = [{}, {"slnt": -1.0}]
-    coords_by_loc = {
-        (): base,
-        (("slnt", -1.0),): _shear(base, _SHEAR_15),
-    }
-    _install_variable_glyph(font, glyph_name, locs, coords_by_loc, end_pts, flags)
+# & (U+0026): the intricate ampersand — a figure-eight "et" shape with two
+# enclosed counters (the upper loop and the lower loop). Measured from SF Mono
+# Regular (cap-scaled into the 600 cell). 3 contours: outer body, upper-loop
+# counter, lower-loop counter (counters wind opposite the outer).
+_AMP_LIGHT = [
+    # contour 0 — outer body (points 0..36)
+    (482.6, 0.0), (578.7, 0.0), (470.5, 131.5), (495.3, 174.6),
+    (521.4, 281.4), (523.4, 345.9), (523.4, 353.2), (453.0, 353.2),
+    (453.0, 348.8), (450.1, 253.2), (423.9, 191.6), (273.1, 381.3),
+    (321.1, 412.8), (378.3, 470.1), (403.6, 529.7), (403.6, 564.7),
+    (403.6, 609.3), (364.3, 676.7), (294.4, 714.6), (248.8, 714.6),
+    (202.7, 714.6), (131.9, 676.7), (92.1, 609.3), (92.1, 564.7),
+    (92.1, 526.8), (130.9, 442.9), (170.7, 393.9), (148.4, 378.9),
+    (21.3, 295.9), (21.3, 181.4), (21.3, 138.7), (51.9, 67.4),
+    (107.7, 15.5), (183.8, -12.6), (229.9, -12.6), (343.4, -12.6),
+    (426.9, 71.8),
+    # contour 1 — upper-loop counter (points 37..51)
+    (248.3, 646.6), (272.1, 646.6), (309.9, 624.8), (331.8, 587.5),
+    (331.8, 563.7), (331.8, 538.0), (313.3, 495.8), (269.7, 454.1),
+    (231.8, 428.8), (195.5, 472.5), (164.9, 534.1), (164.9, 563.7),
+    (164.9, 587.5), (186.7, 624.8), (224.6, 646.6),
+    # contour 2 — lower-loop counter (points 52..63)
+    (192.6, 327.9), (212.0, 340.5), (384.7, 124.7), (358.0, 93.1),
+    (279.9, 59.7), (232.8, 59.7), (193.0, 59.7), (132.4, 91.2),
+    (98.9, 148.0), (98.9, 185.3), (98.9, 228.5), (144.5, 298.3),
+]
+_AMP_END_PTS = [36, 51, 63]
+_AMP_FLAGS = [
+    1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1,
+    0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1,
+    1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0,
+    1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0,
+]
 
 
-def graft_ampersand(font):
-    """Replace ``&`` with Moxy's reference ampersand."""
-    _graft_glyph_single_master_variable(font, "ampersand", TTFont(_REF_LIGHT))
+def draw_ampersand(font):
+    """Variable build: draw ``&`` (U+0026) as Moxy's reference ampersand.
+
+    Single master (constant across wght; italic shears). Replaces the prior SF
+    Mono graft with hardcoded geometry (OFL-clean)."""
+    _draw_glyph_variable(font, "ampersand", _AMP_LIGHT, _AMP_LIGHT,
+                         _AMP_END_PTS, _AMP_FLAGS)
 
 
 # --------------------------------------------------------------------------------------
@@ -775,24 +715,7 @@ def draw_at_static(font, wght, slnt=0.0):
                        _AT_END_PTS, _AT_FLAGS, wght, slnt)
 
 
-def _pick_ref_static(wght):
-    """Pick the closest reference weight for a static instance. Recursive's
-    Regular (375) maps to the Regular master; Bold (600) maps to Semibold."""
-    return TTFont(_REF_SEMIBOLD) if wght >= 550 else TTFont(_REF_LIGHT)
-
-
-def _graft_glyph_single_master_static(font, glyph_name, wght, slnt=0.0):
-    """Static build: replace ``glyph_name`` with a single reference outline at
-    the closest reference weight, sheared for italic. No weight interpolation
-    (the reference font's masters aren't point-compatible for these glyphs)."""
-    src = _pick_ref_static(wght)
-    scale = _source_scale(src)
-    coords, end_pts, flags = _quad_outline(src, glyph_name, scale)
-    if slnt:
-        coords = _shear(coords, math.tan(math.radians(-slnt)))
-    _write_outline(font, glyph_name, coords, end_pts, flags)
-
-
-def graft_ampersand_static(font, wght, slnt=0.0):
-    """Static build: swap ``&`` for Moxy's reference ampersand."""
-    _graft_glyph_single_master_static(font, "ampersand", wght, slnt)
+def draw_ampersand_static(font, wght, slnt=0.0):
+    """Static build: draw ``&`` at the instance's slant (single master)."""
+    _draw_glyph_static(font, "ampersand", _AMP_LIGHT, _AMP_LIGHT,
+                       _AMP_END_PTS, _AMP_FLAGS, wght, slnt)
