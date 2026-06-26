@@ -228,8 +228,8 @@ def add_connected_bars(font: TTFont, recursive_path: str) -> list[int]:
     glyph, adv 1200) and less+bar -> less_bar.code. lilx substitutes those for
     connected versions built from Lilex's bar_greater.liga.cv11 /
     less_bar.liga.cv11, repositioned onto Recursive's 1200-unit ligature cell.
-    (Requires dlig on — the toggle any Recursive code ligature needs; Recursive
-    ships no calt.)
+    It also forms those two ligatures directly, so lilx works without enabling
+    all of Recursive's dlig code ligatures.
     """
     light, heavy = wght_anchors(
         recursive_path,
@@ -240,12 +240,13 @@ def add_connected_bars(font: TTFont, recursive_path: str) -> list[int]:
     )
     rec = TTFont(recursive_path)
     rg = rec["glyf"]
-    mapping = {}
+    single_mapping = {}
+    lig_mapping = {}
     specs = [
-        ("bar_greater.code", "bar_greater.liga.cv11"),
-        ("less_bar.code", "less_bar.liga.cv11"),
+        (("bar", "greater"), "bar_greater.code", "bar_greater.liga.cv11"),
+        (("less", "bar"), "less_bar.code", "less_bar.liga.cv11"),
     ]
-    for target, src in specs:
+    for sequence, target, src in specs:
         tg = rg[target]
         tg.recalcBounds(rg)
         adv = rec["hmtx"].metrics[target][0]
@@ -264,11 +265,18 @@ def add_connected_bars(font: TTFont, recursive_path: str) -> list[int]:
             dx=dx,
             dy=dy,
         )
-        mapping[target] = alt
+        single_mapping[target] = alt
+        lig_mapping[sequence] = alt
     font.getReverseGlyphMap(rebuild=True)
-    idx = append_lookup(font, single_sub_lookup(mapping))
-    print(f"  • connected bars (cv11): Lilex wght {light}->{heavy}, lookup {idx}")
-    return [idx]
+    lig = ot.Lookup()
+    lig.LookupType = 4
+    lig.LookupFlag = 0
+    lig.SubTable = [otl.buildLigatureSubstSubtable(lig_mapping)]
+    lig.SubTableCount = 1
+    lig_idx = append_lookup(font, lig)
+    sub_idx = append_lookup(font, single_sub_lookup(single_mapping))
+    print(f"  • connected bars (cv11): Lilex wght {light}->{heavy}, lookups {[lig_idx, sub_idx]}")
+    return [lig_idx, sub_idx]
 
 
 # ----------------------------------------------------------------------------
@@ -509,11 +517,10 @@ def add_arrow_chars(font: TTFont, recursive_path: str) -> list[int]:
 
 
 # ----------------------------------------------------------------------------
-# Named instances at the Mono Linear (MONO=1, CASL=0) use points, so macOS
-# CoreText renders CASL=0 (which it would otherwise snap to the nearest named
-# instance — only CASL 0/1 exist in Recursive's inherited set, so the default
-# would land on Recursive's own "Linear" named instance with the wrong subfamily
-# name).
+# Moxy-owned named instances. Recursive's inherited instances keep Recursive
+# PostScript names, and CoreText/Ghostty can use those while resolving styles.
+# Replace them outright after MONO is pinned away so every advertised instance is
+# named as Moxy and only contains live axes.
 
 # (subfamily name, wght, slnt, CRSV); MONO=1, CASL=0 for all.
 LINEAR_INSTANCES = [
@@ -530,10 +537,17 @@ LINEAR_INSTANCES = [
 ]
 
 
-def add_linear_instances(font: TTFont, instances: list[dict] | None = None) -> None:
+def instance_postscript_name(subfamily: str) -> str:
+    base = re.sub(r"[^A-Za-z0-9-]", "", PS_NAME) or "MoxyVF"
+    suffix = re.sub(r"[^A-Za-z0-9]", "", subfamily) or "Regular"
+    return f"{base}-{suffix}"
+
+
+def replace_named_instances(font: TTFont, instances: list[dict] | None = None) -> None:
+    from fontTools.varLib.instancer import names as instancer_names
     from fontTools.ttLib.tables._f_v_a_r import NamedInstance
+
     name = font["name"]
-    added = 0
     configured = instances if instances is not None else [
         {
             "name": subfamily,
@@ -548,31 +562,100 @@ def add_linear_instances(font: TTFont, instances: list[dict] | None = None) -> N
     # Only coordinate axes that still exist on the font (Moxy is pure-mono: MONO
     # is pinned away, so drop it from instance coordinates).
     live_axes = {a.axisTag for a in font["fvar"].axes}
-    for spec in configured:
-        subfamily = spec["name"]
-        coords = {
-            tag: float(spec[tag])
-            for tag in ("MONO", "CASL", "wght", "slnt", "CRSV")
-            if tag in spec and tag in live_axes
-        }
-        # skip if an instance already sits at these exact coordinates
-        if any(i.coordinates == coords for i in font["fvar"].instances):
-            continue
-        nid = free_name_id(font)
-        name.setName(subfamily, nid, 3, 1, 0x409)
-        inst = NamedInstance()
-        inst.coordinates = coords
-        inst.subfamilyNameID = nid
-        inst.postscriptNameID = 0xFFFF  # no per-instance PostScript name
-        inst.flags = 0
-        font["fvar"].instances.append(inst)
-        added += 1
+
+    with instancer_names.pruningUnusedNames(font):
+        font["fvar"].instances = []
+        seen: set[tuple[tuple[str, float], ...]] = set()
+        for spec in configured:
+            subfamily = spec["name"]
+            coords = {
+                tag: float(spec[tag])
+                for tag in ("MONO", "CASL", "wght", "slnt", "CRSV")
+                if tag in spec and tag in live_axes
+            }
+            key = tuple(sorted(coords.items()))
+            if key in seen:
+                continue
+            seen.add(key)
+
+            subfamily_id = free_name_id(font)
+            name.setName(subfamily, subfamily_id, 3, 1, 0x409)
+            ps_id = free_name_id(font)
+            name.setName(instance_postscript_name(subfamily), ps_id, 3, 1, 0x409)
+
+            inst = NamedInstance()
+            inst.coordinates = coords
+            inst.subfamilyNameID = subfamily_id
+            inst.postscriptNameID = ps_id
+            inst.flags = 0
+            font["fvar"].instances.append(inst)
+
     casl_counts: dict[float, int] = {}
     for inst in font["fvar"].instances:
         c = inst.coordinates.get("CASL", 0.0)
         casl_counts[c] = casl_counts.get(c, 0) + 1
     casl_summary = ", ".join(f"CASL={c}: {n}" for c, n in sorted(casl_counts.items()))
-    print(f"  • named instances now in font ({casl_summary})")
+    print(f"  • replaced named instances with Moxy-owned set ({casl_summary})")
+
+
+def prune_stat_to_live_axes(font: TTFont) -> None:
+    if "STAT" not in font or "fvar" not in font:
+        return
+
+    stat = font["STAT"].table
+    if not stat.DesignAxisRecord:
+        return
+
+    live_axes = [axis.axisTag for axis in font["fvar"].axes]
+    live = set(live_axes)
+    old_axes = list(stat.DesignAxisRecord.Axis)
+    old_to_new: dict[int, int] = {}
+    new_axes = []
+    for old_index, axis in enumerate(old_axes):
+        if axis.AxisTag not in live:
+            continue
+        old_to_new[old_index] = len(new_axes)
+        axis.AxisOrdering = len(new_axes)
+        new_axes.append(axis)
+
+    if len(new_axes) == len(old_axes):
+        return
+
+    stat.DesignAxisRecord.Axis = new_axes
+    stat.DesignAxisCount = len(new_axes)
+
+    if not stat.AxisValueArray:
+        print(f"  • pruned STAT axes to live fvar axes ({', '.join(live_axes)})")
+        return
+
+    new_values = []
+    for axis_value in stat.AxisValueArray.AxisValue:
+        if axis_value.Format in (1, 2, 3):
+            if axis_value.AxisIndex not in old_to_new:
+                continue
+            axis_value.AxisIndex = old_to_new[axis_value.AxisIndex]
+            new_values.append(axis_value)
+        elif axis_value.Format == 4:
+            records = []
+            for record in axis_value.AxisValueRecord:
+                if record.AxisIndex not in old_to_new:
+                    continue
+                record.AxisIndex = old_to_new[record.AxisIndex]
+                records.append(record)
+            if len(records) < 2:
+                continue
+            axis_value.AxisValueRecord = records
+            axis_value.AxisCount = len(records)
+            new_values.append(axis_value)
+        else:
+            new_values.append(axis_value)
+
+    stat.AxisValueCount = len(new_values)
+    if new_values:
+        stat.AxisValueArray.AxisValue = new_values
+    else:
+        stat.AxisValueArray = None
+    print(f"  • pruned STAT axes to live fvar axes ({', '.join(live_axes)})")
 
 
 # ----------------------------------------------------------------------------
@@ -679,19 +762,16 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
             inplace=True,
         )
         font.getReverseGlyphMap(rebuild=True)
+        prune_stat_to_live_axes(font)
         kept = [a.axisTag for a in font["fvar"].axes]
         pinned = " (MONO pinned=1, axis dropped)" if pure_mono else ""
         pretty = ", ".join(f"{tag}={value}" for tag, value in axis_defaults.items())
         print(f"Re-based default -> {pretty}{pinned}; axes now {kept}")
 
-    # ---- named instances at the Mono Linear (CASL=0) use points --------------
-    # Recursive's inherited named instances only sit at CASL 0/1 and MONO 0/1, so
-    # macOS CoreText (which snaps a VF's coordinates to the NEAREST named instance)
-    # snaps our CASL=0 default onto Recursive's own "Linear" named instance (and
-    # its subfamily name). Add exact named instances at MONO=1, CASL=0 (incl. the
-    # default) so those render under Moxy's subfamily names. Additive: the CASL
-    # 0/1 instances stay, so those keep working.
-    add_linear_instances(font, options.get("Named Instances"))
+    # ---- replace inherited Recursive named instances -------------------------
+    # Recursive's fvar instances carry Recursive PostScript names. Replacing them
+    # keeps CoreText/Ghostty style matching inside the Moxy family.
+    replace_named_instances(font, options.get("Named Instances"))
 
     # ---- advertise true monospace --------------------------------------------
     # With MONO pinned to Mono, every glyph is the 600-unit cell at every axis
