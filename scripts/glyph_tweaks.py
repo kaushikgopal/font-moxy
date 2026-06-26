@@ -14,13 +14,13 @@ strategies:
 Baked-in tweaks (called unconditionally from the builds, not a configurable
 option):
   * ``%`` (slash + two oval ring dots), ``/`` and ``\\`` (clean straight
-    slashes), ``✓`` (fuller 6-point check), ``•`` (fuller circle) and ``$``
-    (dollar sign) — drawn directly from explicit geometry, so no external outline
-    data is read or shipped (OFL-clean). The shapes match SF Mono's,
-    reconstructed here, not borrowed.
-  * ``@`` ``&`` (reference at-sign, ampersand) — still grafted from a reference
-    font, single-master (slant-only variation) because the reference font's
-    weight masters aren't point-compatible for those glyphs.
+    slashes), ``✓`` (fuller 6-point check), ``•`` (fuller circle), ``$``
+    (dollar sign) and ``@`` (spiral at-sign) — drawn directly from explicit
+    geometry, so no external outline data is read or shipped (OFL-clean). The
+    shapes match SF Mono's, reconstructed here, not borrowed.
+  * ``&`` (reference ampersand) — still grafted from a reference font,
+    single-master (slant-only variation) because the reference font's weight
+    masters aren't point-compatible for that glyph.
 
 For both grafts and draws, the variable build installs gvar masters and the
 static build interpolates/shears per instance.
@@ -652,6 +652,43 @@ def draw_dollar(font):
                          _DOLLAR_END_PTS, _DOLLAR_FLAGS)
 
 
+# @ (U+0040): the modern single-contour spiral at-sign — one continuous path
+# that forms the outer ring, swings in to become the inner counter wall, and
+# curls into the central tail. Measured from SF Mono Regular (cap-scaled into
+# the 600 cell). 1 contour, 50 points.
+_AT_LIGHT = [
+    (310.9, -96.0), (346.8, -96.0), (412.3, -85.4), (429.8, -77.1),
+    (429.8, -19.9), (419.6, -24.7), (384.2, -33.0), (341.5, -37.4),
+    (319.6, -37.4), (209.0, -37.4), (104.7, 113.5), (104.7, 274.6),
+    (104.7, 349.8), (104.7, 508.4), (201.3, 656.8), (303.2, 656.8),
+    (398.7, 656.8), (496.2, 531.2), (496.2, 407.0), (496.2, 270.7),
+    (496.2, 234.3), (468.6, 204.2), (435.1, 204.2), (355.5, 204.2),
+    (355.5, 405.5), (355.5, 432.7), (330.3, 464.7), (309.0, 464.7),
+    (287.6, 464.7), (261.9, 432.7), (261.9, 405.5), (261.9, 207.1),
+    (261.9, 180.5), (293.9, 148.4), (321.1, 148.4), (444.8, 148.4),
+    (497.2, 148.4), (555.4, 213.9), (555.4, 272.6), (555.4, 417.7),
+    (555.4, 513.7), (496.7, 646.6), (384.2, 715.5), (303.6, 715.5),
+    (176.5, 715.5), (44.6, 531.2), (44.6, 354.1), (44.6, 263.4),
+    (44.6, 86.3), (179.9, -96.0),
+]
+_AT_END_PTS = [49]
+_AT_FLAGS = [
+    1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1,
+    1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1,
+    0, 0,
+]
+
+
+def draw_at(font):
+    """Variable build: draw ``@`` (U+0040) as Moxy's reference at-sign (spiral).
+
+    Single master (constant across wght; italic shears). Replaces the prior SF
+    Mono graft with hardcoded geometry (OFL-clean). The composite ``at.case``
+    references ``at`` as a component, so it inherits."""
+    _draw_glyph_variable(font, "at", _AT_LIGHT, _AT_LIGHT,
+                         _AT_END_PTS, _AT_FLAGS)
+
+
 def _graft_glyph_single_master_variable(font, glyph_name, src_font):
     """Replace ``glyph_name`` with a single reference outline — no weight
     variation, only slant. Used when the reference font's weight masters aren't
@@ -665,14 +702,6 @@ def _graft_glyph_single_master_variable(font, glyph_name, src_font):
         (("slnt", -1.0),): _shear(base, _SHEAR_15),
     }
     _install_variable_glyph(font, glyph_name, locs, coords_by_loc, end_pts, flags)
-
-
-def graft_at(font):
-    """Replace ``@`` with Moxy's reference at-sign.
-
-    The composite ``at.case`` references ``at`` as a component, so it inherits.
-    """
-    _graft_glyph_single_master_variable(font, "at", TTFont(_REF_LIGHT))
 
 
 def graft_ampersand(font):
@@ -738,6 +767,14 @@ def draw_dollar_static(font, wght, slnt=0.0):
                        _DOLLAR_END_PTS, _DOLLAR_FLAGS, wght, slnt)
 
 
+def draw_at_static(font, wght, slnt=0.0):
+    """Static build: draw ``@`` at the instance's slant (single master).
+
+    The composite ``at.case`` references ``at`` as a component, so it inherits."""
+    _draw_glyph_static(font, "at", _AT_LIGHT, _AT_LIGHT,
+                       _AT_END_PTS, _AT_FLAGS, wght, slnt)
+
+
 def _pick_ref_static(wght):
     """Pick the closest reference weight for a static instance. Recursive's
     Regular (375) maps to the Regular master; Bold (600) maps to Semibold."""
@@ -754,11 +791,6 @@ def _graft_glyph_single_master_static(font, glyph_name, wght, slnt=0.0):
     if slnt:
         coords = _shear(coords, math.tan(math.radians(-slnt)))
     _write_outline(font, glyph_name, coords, end_pts, flags)
-
-
-def graft_at_static(font, wght, slnt=0.0):
-    """Static build: swap ``@`` for Moxy's reference at-sign."""
-    _graft_glyph_single_master_static(font, "at", wght, slnt)
 
 
 def graft_ampersand_static(font, wght, slnt=0.0):
