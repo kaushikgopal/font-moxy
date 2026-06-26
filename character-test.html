@@ -3,110 +3,358 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Moxy — Character Test</title>
+<title>Moxy — Character Specimen</title>
 <style>
   :root{
     --bg:#fbfaf8; --surface:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e7e4df;
-    --two:#2f6f4e; --single:#b8860b; --radius:10px;
+    --zebra:#eeece8; --moxy:#2f6f4e; --rec:#1f6feb; --radius:10px;
     --font:ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
   @media (prefers-color-scheme: dark){
-    :root{--bg:#16140f; --surface:#1f1c16; --ink:#ece7dd; --muted:#9b9487; --line:#332f27;}
+    :root{--bg:#16140f; --surface:#1f1c16; --ink:#ece7dd; --muted:#9b9487; --line:#332f27;
+          --zebra:#26231c; --moxy:#7cc6a0; --rec:#7ab7ff;}
   }
+
+  /* Self-contained: load both variable fonts straight from the repo so the
+     specimen doesn't depend on anything being installed. The Moxy column uses
+     the built Moxy VF (full moxy + lilx look); the Recursive column uses
+     Recursive's source VF rendered at MONO=1 so it's monospace-comparable.
+     Note: Chrome blocks local @font-face from file:// — open via Safari, or run
+     `python -m http.server` in the repo root and load over http. */
+  @font-face{
+    font-family:"MoxyVF";
+    src:url("fonts/Moxy-VF/Moxy%5BCASL%2Cwght%2Cslnt%2CCRSV%5D.ttf") format("truetype");
+    font-weight:300 1000;
+  }
+  @font-face{
+    font-family:"RecVF";
+    src:url("font-data/Recursive_VF_1.085.ttf") format("truetype");
+    font-weight:300 1000;
+  }
+
   body{background:var(--bg); color:var(--ink); font:16px/1.5 var(--font);
-    margin:0; padding:32px 24px 60px;}
-  h1{font-size:26px; margin:0 0 4px;}
+    margin:0; padding:32px 24px 90px;}
+  h1{font-size:28px; margin:0 0 4px;}
+  h2{font-size:20px; margin:32px 0 2px;}
+  h3{font-size:12px; font-weight:700; color:var(--muted); margin:20px 0 8px;
+     text-transform:uppercase; letter-spacing:.05em;}
   .sub{color:var(--muted); margin:0 0 18px; font-size:14px;}
-  .legend{display:flex; gap:18px; flex-wrap:wrap; margin:0 0 20px; font-size:13px;}
+  .lead{color:var(--muted); margin:0 0 20px; font-size:14px; max-width:60ch;}
+
+  .legend{display:flex; gap:20px; flex-wrap:wrap; margin:0 0 22px; font-size:13px;}
   .legend .pill{display:inline-flex; align-items:center; gap:6px;}
   .dot{width:10px; height:10px; border-radius:50%; display:inline-block;}
-  .dot.two{background:var(--two);} .dot.single{background:var(--single);}
+  .dot.moxy{background:var(--moxy);} .dot.rec{background:var(--rec);}
+
+  /* glyph rendering: Moxy = full look (moxy + lilx on, calt on, Linear);
+     Recursive = plain, monospaced (MONO=1, Linear). --w sets the weight. */
+  .glyph-moxy{font-family:"MoxyVF",monospace;
+    font-feature-settings:"moxy" 1,"lilx" 1,"calt" 1;
+    font-variation-settings:"wght" var(--w,400),"CASL" 0;}
+  .glyph-rec{font-family:"RecVF",monospace;
+    font-variation-settings:"wght" var(--w,400),"MONO" 1,"CASL" 0;}
+
+  .scroll{overflow-x:auto;}
   table{border-collapse:collapse; width:100%; background:var(--surface);
-    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+    margin:0 0 6px;}
   th,td{border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:0;}
-  th{font:600 13px/1 var(--font); color:var(--muted); padding:12px 8px; text-align:center;
-    background:rgba(127,127,127,.06); white-space:nowrap;}
-  th:first-child{text-align:left; padding-left:16px;}
-  td{text-align:center;}
-  td:first-child{text-align:left; padding:8px 16px; white-space:nowrap;}
+  th{font:600 12px/1 var(--font); color:var(--muted); padding:10px 6px; text-align:center;
+     background:rgba(127,127,127,.06); white-space:nowrap;}
+  th:first-child{text-align:left; padding-left:14px;}
   tr:last-child td{border-bottom:none;}
-  td .label{display:inline-flex; align-items:baseline; gap:8px;}
-  td .label .ch{font:700 30px/1 "Moxy",monospace; font-variation-settings:"wght" 400;}
-  td .label .nm{font-size:13px; color:var(--ink);}
-  td .label .cp{font-size:11px; color:var(--muted); font-family:ui-monospace,monospace;}
-  .badge{display:inline-block; font:600 10px/1 var(--font); padding:3px 7px; border-radius:20px;
-    color:#fff; margin-left:6px; vertical-align:middle;}
-  .badge.two{background:var(--two);} .badge.single{background:var(--single);}
-  .glyph{font-family:"Moxy",monospace; font-size:72px; line-height:1.2;
-    display:block; padding:18px 8px; color:var(--ink);}
-  .note{margin-top:24px; color:var(--muted); font-size:13px; line-height:1.6;
-    border-top:1px solid var(--line); padding-top:16px;}
+  td{text-align:center;}
+  td:first-child{text-align:left; padding:10px 14px; white-space:nowrap;}
+
+  /* 7-weight comparison grid */
+  .grid .lbl{vertical-align:middle; min-width:150px;}
+  .grid .ch{display:block; font:700 30px/1 "MoxyVF",monospace;
+    font-feature-settings:"moxy" 1,"lilx" 1,"calt" 1;
+    font-variation-settings:"wght" 400,"CASL" 0; margin-bottom:3px;}
+  .grid .nm{font-size:13px; color:var(--ink);}
+  .grid .cp{font-size:11px; color:var(--muted); font-family:ui-monospace,monospace;}
+  .grid .tagcol{width:64px;}
+  .tag{display:inline-block; font:700 9px/1 var(--font); padding:3px 7px; border-radius:20px;
+       color:#fff; letter-spacing:.02em;}
+  .tag.moxy{background:var(--moxy);} .tag.rec{background:var(--rec);}
+  .rec-row td,.rec-cell{background:var(--zebra);}
+  .cell{display:block; padding:12px 4px; font-size:52px; line-height:1.1;}
+  .absent{color:var(--muted); font:400 16px/1 var(--font); display:inline-block;
+          padding:12px 0; opacity:.7;}
+
+  /* contextual ligatures: 2 weights (400 + 700), Moxy vs Rec */
+  .ctx .seq{display:block; font:700 24px/1 "MoxyVF",monospace;
+    font-feature-settings:"moxy" 1,"lilx" 1,"calt" 1;
+    font-variation-settings:"wght" 400,"CASL" 0; margin-bottom:3px;}
+  .ctx .cell{font-size:40px; padding:14px 8px; white-space:pre;}
+
+  /* full font matrix: two side-by-side Cobalt2 code blocks */
+  .matrix-wrap{display:grid; grid-template-columns:1fr 1fr; gap:0;
+    max-width:960px; margin-inline:auto;
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
+  .matrix-col{display:flex; flex-direction:column; min-width:0;}
+  .matrix-col + .matrix-col{border-left:1px solid var(--line);}
+  .matrix-col .head{display:flex; align-items:center; gap:8px; padding:9px 14px;
+    font:600 12px/1 var(--font); color:var(--muted); border-bottom:1px solid var(--line);
+    background:rgba(127,127,127,.06);}
+  .matrix-col pre{margin:0; padding:14px 16px; overflow-x:auto;
+    font-size:clamp(11px,1.4vw,13px); line-height:1.65; white-space:pre;
+    background:#193549; color:#e8e8e8; tab-size:2;}
+  .matrix-col.rec pre{background:#15232f; font-feature-settings:"dlig" 1,"liga" 1;}
+  .matrix-col.moxy pre{background:#193549;}
+  @media (max-width:820px){.matrix-wrap{grid-template-columns:1fr;}
+    .matrix-col + .matrix-col{border-left:none; border-top:1px solid var(--line);}}
+
+  .caption{color:var(--muted); font-size:12px; margin:2px 0 14px; max-width:70ch;}
+
+  .warn{display:none; margin:0 0 18px; padding:12px 14px; border-radius:var(--radius);
+    background:#fff4ce; color:#7a5a00; border:1px solid #e6cf6a; font-size:13px; line-height:1.5;}
+  .warn code{font:12px ui-monospace,monospace; background:#0000001a; padding:1px 5px; border-radius:4px;}
+  @media (prefers-color-scheme: dark){
+    .warn{background:#3a2f12; color:#f0d68a; border-color:#5a4a1a;}}
+
+  .note{margin-top:34px; color:var(--muted); font-size:13px; line-height:1.6;
+    border-top:1px solid var(--line); padding-top:16px; max-width:70ch;}
   .note code{font:12px/1.4 ui-monospace,monospace; background:rgba(127,127,127,.12);
     padding:1px 5px; border-radius:4px;}
-  .missing{color:var(--single); font-size:13px; font-family:var(--font);}
+  .note p{margin:0 0 8px;}
 </style>
 </head>
 <body>
-<h1>Moxy — Character Test</h1>
-<p class="sub">All drawn/overridden glyphs at 7 weights, using the installed Moxy variable font.</p>
+<h1>Moxy — Character Specimen</h1>
+<p class="sub">Moxy vs Recursive, side by side. What Moxy changes, at 7 weights.</p>
+
+<div id="warn" class="warn">
+  The embedded fonts didn't load. Chrome blocks local <code>@font-face</code> from
+  <code>file://</code> — open this page in Safari, or run <code>python -m http.server</code>
+  in the repo root and reload over <code>http://localhost:8000</code>.
+</div>
 
 <div class="legend">
-  <span class="pill"><span class="dot two"></span> two-master (thickens with weight)</span>
-  <span class="pill"><span class="dot single"></span> single-master (constant across weight)</span>
+  <span class="pill"><span class="dot moxy"></span> Moxy — <code>moxy</code> + <code>lilx</code> on (full look)</span>
+  <span class="pill"><span class="dot rec"></span> Recursive — plain, <code>MONO=1</code> (monospaced)</span>
+  <span class="pill">both at <code>CASL=0</code> (Linear), weights 300–900</span>
 </div>
 
-<table id="grid">
-  <thead>
-    <tr id="head"></tr>
-  </thead>
-  <tbody id="rows"></tbody>
+<p class="lead">The <strong>Moxy</strong> column shows the full Moxy look (the variable font with
+<code>moxy</code> + <code>lilx</code> enabled). The <strong>Recursive</strong> column shows the
+source Recursive at the matching weight, rendered monospaced so the forms are directly comparable.</p>
+
+<h2>Changed characters</h2>
+
+<h3>Lilex — curvy parentheses</h3>
+<p class="caption">Moxy borrows Lilex's curvier <code>(</code> <code>)</code> (behind <code>lilx</code>;
+baked into the static fonts). Recursive's parentheses are straighter.</p>
+<div class="scroll">
+<table class="grid">
+  <thead><tr><th>glyph</th><th class="tagcol"></th><th>300</th><th>400</th><th>500</th><th>600</th><th>700</th><th>800</th><th>900</th></tr></thead>
+  <tbody id="g-parens"></tbody>
 </table>
+</div>
+
+<h3>Lilex — added arrows (absent in Recursive)</h3>
+<p class="caption">These 12 single-character arrows are grafted from Lilex and always-on in Moxy.
+Recursive has no glyph for any of them, so the Recursive column shows <span class="absent">—</span>.</p>
+<div class="scroll">
+<table class="grid">
+  <thead><tr><th>glyph</th><th class="tagcol"></th><th>300</th><th>400</th><th>500</th><th>600</th><th>700</th><th>800</th><th>900</th></tr></thead>
+  <tbody id="g-arrows"></tbody>
+</table>
+</div>
+
+<h3>Lilex — contextual ligatures</h3>
+<p class="caption">Behind <code>lilx</code> (default-on in the static build). <code>|&gt;</code> / <code>&lt;|</code>
+join the bar to the arrowhead; runs of <code>---</code>+ connect into one stroke; a backslash thins
+when it's an escape (<code>\n</code>, <code>\\</code> — the 1st of a pair thins, the 2nd stays normal).</p>
+<div class="scroll">
+<table class="ctx">
+  <thead><tr><th>sequence</th><th>Moxy · 400</th><th>Rec · 400</th><th>Moxy · 700</th><th>Rec · 700</th></tr></thead>
+  <tbody id="g-ctx"></tbody>
+</table>
+</div>
+
+<h3>Directly drawn — SF Mono–inspired</h3>
+<p class="caption">Drawn from scratch (OFL-clean) and always-on in both VF and static. These override
+Recursive's own <code>✓ • / \ % $ @ &amp;</code> and the numerals <code>2 4 5 7</code>. The single- and
+two-master glyphs thicken with weight; <code>$ @ &amp;</code> stay constant by design.</p>
+<div class="scroll">
+<table class="grid">
+  <thead><tr><th>glyph</th><th class="tagcol"></th><th>300</th><th>400</th><th>500</th><th>600</th><th>700</th><th>800</th><th>900</th></tr></thead>
+  <tbody id="g-drawn"></tbody>
+</table>
+</div>
+
+<h2>Full font matrix</h2>
+<p class="caption">The whole matrix, in Recursive (plain, <code>MONO=1</code>) on the left and Moxy
+(<code>moxy</code> + <code>lilx</code> on) on the right, both at Regular. Watch the last two lines:
+long arrows (<code>--&gt;-&gt;</code> →), <code>|&gt;</code> <code>&lt;|</code>, and escape backslashes.</p>
+<div class="scroll">
+  <div class="matrix-wrap">
+    <div class="matrix-col rec">
+      <div class="head"><span class="tag rec">Rec</span> Recursive</div>
+      <pre class="glyph-rec" id="matrix-rec" style="--w:400"></pre>
+    </div>
+    <div class="matrix-col moxy">
+      <div class="head"><span class="tag moxy">Moxy</span> Moxy</div>
+      <pre class="glyph-moxy" id="matrix-moxy" style="--w:400"></pre>
+    </div>
+  </div>
+</div>
 
 <div class="note">
-  <p>Uses the locally-installed <code>Moxy</code> VF (<code>font-variation-settings: "wght" N</code>).
-  If glyphs render as fallback boxes, run <code>make install-vf</code> and reload.</p>
-  <p><strong>What to look for:</strong> two-master glyphs (green) should visibly thicken from 300→900.
-  Single-master glyphs (amber) stay constant — that's expected for <code>$ @ &amp;</code> (they replaced
-  constant-weight grafts), but a <em>bug</em> for numerals that sit alongside two-master ones
-  (<code>2</code> and <code>5</code> should thicken like <code>4</code> and <code>7</code>).</p>
+  <p>Both fonts are loaded straight from the repo via <code>@font-face</code>:
+  Moxy from <code>fonts/Moxy-VF/</code> (the built variable font, <code>moxy</code> + <code>lilx</code> on)
+  and Recursive from <code>font-data/Recursive_VF_1.085.ttf</code> (the source VF, rendered at
+  <code>MONO=1</code> so it's monospaced like Moxy). Both sit at <code>CASL=0</code> (Linear).</p>
+  <p>If the Moxy column looks identical to Recursive, the fonts fell back to the system — see the
+  yellow banner above (Chrome blocks local <code>@font-face</code> from <code>file://</code>).</p>
+  <p>What's <em>not</em> shown here: the Moxy letterform bundle (single-story <code>g</code>, simplified
+  <code>f r 6 9 1</code>, dotted <code>0</code>, fancy long-tail <code>Q</code>) — those are Recursive
+  stylistic sets (<code>ss02/03/06/09/10/11</code> + <code>titl</code>) bundled under the <code>moxy</code>
+  toggle, visible in the matrix above.</p>
 </div>
 
+<script type="text/plain" id="matrix-src">
+###########################################
+#########  FONT MATRIX ################
+
+#           lLiI1 oO0
+#  !ilI17 AHH-eye-ell-Eye-one-seven
+#  co0ODQ see-oh-zero-Oh-Dee-Cue
+#  b6&B80 bee-six-et-Bee-eight-zero
+#  sS5$S  ess-Ess-five-dollar-Ess
+#  abcdefghijklmnopqrstuvwxyz .?!"'
+#  ABCDEFGHIJKLMNOPQRSTUVWXYZ ,;:-_
+#  1234567890 ,._-+=>< --__ ~-+=><
+#  !@#$%^&*() <> '"`~_-=+*\/|!?,.:;
+#  {}[]()<>$*-+=/#_%^@\&|~?'" !,.;:
+#  a@ B8 dbqp E3 i! 96 G6& g9qCGQ
+#  coO08BbODQ |!iIlL17 $5SZ2zsz
+#  TtijJlFPRK vvw VVW \/V
+#  $ @ . •
+#  \n \\ \b \\b ( ) |> <|
+#  → ↑ ↓ ← ↔ ↕ -  ↩ ↪ ↰ ↱ ↲ ↳ ↶ ↷ ↺ ↻ ⇄ ⇆
+#  ---> --> -> → ↓ ↑ ← <- <-- <---
+</script>
+
 <script>
-const CHARS = [
-  {ch:"\u2713", name:"checkmark",  cp:"U+2713", master:"two"},
-  {ch:"\u2022", name:"bullet",     cp:"U+2022", master:"two"},
-  {ch:"/",      name:"slash",      cp:"U+002F", master:"two"},
-  {ch:"\\",     name:"backslash",  cp:"U+005C", master:"two"},
-  {ch:"%",      name:"percent",    cp:"U+0025", master:"two"},
-  {ch:"$",      name:"dollar",     cp:"U+0024", master:"single"},
-  {ch:"@",      name:"at",         cp:"U+0040", master:"single"},
-  {ch:"&",      name:"ampersand",  cp:"U+0026", master:"single"},
-  {ch:"2",      name:"two",        cp:"U+0032", master:"single"},
-  {ch:"4",      name:"four",       cp:"U+0034", master:"two"},
-  {ch:"5",      name:"five",       cp:"U+0035", master:"single"},
-  {ch:"7",      name:"seven",      cp:"U+0037", master:"two"},
+const WEIGHTS = [300,400,500,600,700,800,900];
+
+const PARENS = [
+  {ch:"(",  name:"parenleft",  cp:"U+0028"},
+  {ch:")",  name:"parenright", cp:"U+0029"},
 ];
-const WEIGHTS = [300, 400, 500, 600, 700, 800, 900];
 
-const head = document.getElementById("head");
-head.innerHTML = "<th>glyph</th>" +
-  WEIGHTS.map(w => `<th>wght ${w}</th>`).join("");
+const ARROWS = [
+  {ch:"\u21A9", name:"arrow hook left",      cp:"U+21A9", recAbsent:true},
+  {ch:"\u21AA", name:"arrow hook right",     cp:"U+21AA", recAbsent:true},
+  {ch:"\u21B0", name:"arrow up-tip left",    cp:"U+21B0", recAbsent:true},
+  {ch:"\u21B1", name:"arrow up-tip right",   cp:"U+21B1", recAbsent:true},
+  {ch:"\u21B2", name:"arrow down-tip left",  cp:"U+21B2", recAbsent:true},
+  {ch:"\u21B3", name:"arrow down-tip right", cp:"U+21B3", recAbsent:true},
+  {ch:"\u21B6", name:"arc anticlockwise",    cp:"U+21B6", recAbsent:true},
+  {ch:"\u21B7", name:"arc clockwise",        cp:"U+21B7", recAbsent:true},
+  {ch:"\u21BA", name:"circle anticlockwise", cp:"U+21BA", recAbsent:true},
+  {ch:"\u21BB", name:"circle clockwise",     cp:"U+21BB", recAbsent:true},
+  {ch:"\u21C4", name:"arrow right over left",cp:"U+21C4", recAbsent:true},
+  {ch:"\u21C6", name:"arrow left over right",cp:"U+21C6", recAbsent:true},
+];
 
-const rows = document.getElementById("rows");
-for (const c of CHARS) {
-  const tr = document.createElement("tr");
-  const esc = c.ch === "&" ? "&amp;" : c.ch;
-  tr.innerHTML =
-    `<td><span class="label">
-       <span class="ch">${esc}</span>
-       <span class="nm">${c.name}</span>
-       <span class="cp">${c.cp}</span>
-       <span class="badge ${c.master}">${c.master}</span>
-     </span></td>` +
-    WEIGHTS.map(w =>
-      `<td><span class="glyph" style="font-variation-settings:'wght' ${w}">${esc}</span></td>`
-    ).join("");
-  rows.appendChild(tr);
+const DRAWN = [
+  {ch:"\u2713", name:"checkmark",  cp:"U+2713"},
+  {ch:"\u2022", name:"bullet",     cp:"U+2022"},
+  {ch:"/",      name:"slash",      cp:"U+002F"},
+  {ch:"\\",     name:"backslash",  cp:"U+005C"},
+  {ch:"%",      name:"percent",    cp:"U+0025"},
+  {ch:"$",      name:"dollar",     cp:"U+0024"},
+  {ch:"@",      name:"at",         cp:"U+0040"},
+  {ch:"&",      name:"ampersand",  cp:"U+0026"},
+  {ch:"2",      name:"two",        cp:"U+0032"},
+  {ch:"4",      name:"four",       cp:"U+0034"},
+  {ch:"5",      name:"five",       cp:"U+0035"},
+  {ch:"7",      name:"seven",      cp:"U+0037"},
+];
+
+const CTX = [
+  {seq:"|>",  name:"connected bar-greater"},
+  {seq:"<|",  name:"connected less-bar"},
+  {seq:"---", name:"connected dashes"},
+  {seq:"\\n", name:"thin escape backslash"},
+  {seq:"\\\\",name:"escaped backslash (1st thins, 2nd normal)"},
+];
+
+function esc(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function buildGrid(rows, tbodyId){
+  const tbody = document.getElementById(tbodyId);
+  const frag = document.createDocumentFragment();
+  for(const r of rows){
+    const tr1 = document.createElement("tr");
+    tr1.innerHTML =
+      `<td class="lbl" rowspan="2">
+         <span class="ch">${esc(r.ch)}</span>
+         <span class="nm">${r.name}</span>
+         <span class="cp">${r.cp}</span>
+       </td>
+       <td><span class="tag moxy">Moxy</span></td>` +
+      WEIGHTS.map(w =>
+        `<td><span class="cell glyph-moxy" style="--w:${w}">${esc(r.ch)}</span></td>`
+      ).join("");
+
+    const tr2 = document.createElement("tr");
+    tr2.className = "rec-row";
+    tr2.innerHTML =
+      `<td><span class="tag rec">Rec</span></td>` +
+      WEIGHTS.map(w =>
+        r.recAbsent
+          ? `<td><span class="absent" title="Absent in Recursive">—</span></td>`
+          : `<td><span class="cell glyph-rec" style="--w:${w}">${esc(r.ch)}</span></td>`
+      ).join("");
+
+    frag.appendChild(tr1);
+    frag.appendChild(tr2);
+  }
+  tbody.appendChild(frag);
+}
+
+function buildCtx(rows, tbodyId){
+  const tbody = document.getElementById(tbodyId);
+  const frag = document.createDocumentFragment();
+  for(const r of rows){
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      `<td><span class="seq">${esc(r.seq)}</span><span class="nm">${r.name}</span></td>` +
+      `<td><span class="cell glyph-moxy" style="--w:400">${esc(r.seq)}</span></td>` +
+      `<td class="rec-cell"><span class="cell glyph-rec" style="--w:400">${esc(r.seq)}</span></td>` +
+      `<td><span class="cell glyph-moxy" style="--w:700">${esc(r.seq)}</span></td>` +
+      `<td class="rec-cell"><span class="cell glyph-rec" style="--w:700">${esc(r.seq)}</span></td>`;
+    frag.appendChild(tr);
+  }
+  tbody.appendChild(frag);
+}
+
+function buildMatrix(){
+  const raw = document.getElementById("matrix-src").textContent;
+  const text = raw.replace(/^\n+/, "").replace(/\n+$/, "");
+  document.getElementById("matrix-rec").textContent  = text;
+  document.getElementById("matrix-moxy").textContent = text;
+}
+
+buildGrid(PARENS,  "g-parens");
+buildGrid(ARROWS,  "g-arrows");
+buildGrid(DRAWN,   "g-drawn");
+buildCtx(CTX,      "g-ctx");
+buildMatrix();
+
+// Warn if the @font-face fonts didn't actually load (e.g. Chrome on file://).
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(() => {
+    const ok = document.fonts.check('16px "MoxyVF"') &&
+               document.fonts.check('16px "RecVF"');
+    if(!ok) document.getElementById("warn").style.display = "block";
+  });
 }
 </script>
 </body>
