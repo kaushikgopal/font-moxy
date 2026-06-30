@@ -474,6 +474,96 @@ def _draw_glyph_variable(font, glyph_name, light, heavy, end_pts, flags):
     _install_variable_glyph(font, glyph_name, locs, coords_by_loc, end_pts, flags)
 
 
+# --------------------------------------------------------------------------------------
+# Weight calibration for the seven hand-drawn glyphs @ $ & 2 4 5 7.
+#
+# These glyphs were drawn as a Regular-ish "light" and a Bold-ish "heavy" master
+# but were anchored to the wght axis as if light=300 and heavy=1000 — so at
+# Recursive's Regular (the Moxy default, wght 375) they rendered a too-heavy
+# blend, and they didn't sit at the same visual stroke weight as Recursive's own
+# glyphs. Calibration retargets each glyph's stroke to Recursive's reference stem
+# (measured perpendicular thickness, in 600-cell raster units):
+#
+#     thin  ≈ 50   at wght 300 (Light)
+#     light ≈ 81   at wght 375 (Regular / Moxy default)
+#     heavy ≈ 140  (≈ Recursive Bold; the curvy glyphs distort past this)
+#
+# Each master is the glyph's own light→heavy line blended to hit a target stem
+# (pure interpolation along an existing axis = no new distortion). Coefficients
+# were found offline against Recursive's stem; see scripts/dev/calibrate_stems.py
+# to reproduce or re-tune them. ``@`` caps at its existing heavy (1.0) because its
+# spiral self-intersects past that; it therefore reads a touch lighter at Bold.
+#
+# VF: three wght masters (thin@300, light@375=default, heavy@1000); Recursive's
+# native avar then follows the same weight curve as every other glyph. Static:
+# light@375 plus a Bold tuned to Recursive's Bold stem (see _static_calib_frac).
+_CALIB = {
+    # name:        (thin,  light,  heavy)   blend factors on the light→heavy line
+    "two":         (-0.40,  0.04,  0.89),
+    "four":        (-0.35,  0.03,  0.63),
+    "five":        (-0.44,  0.04,  0.81),
+    "seven":       (-0.39,  0.00,  0.70),
+    "ampersand":   (-0.45,  0.11,  1.05),
+    "at":          (-0.36,  0.66,  1.00),
+    "dollar":      (-0.52,  0.00,  0.85),
+}
+
+
+def _blend(a, b, t):
+    """Linear blend of two point-compatible coordinate lists."""
+    return [(a[i][0] + (b[i][0] - a[i][0]) * t,
+             a[i][1] + (b[i][1] - a[i][1]) * t) for i in range(len(a))]
+
+
+def _widen_dollar_bar(coords, left_x, right_x, target_w, tol=2.0):
+    """Push the ``$`` central bar's edges outward to ``target_w``.
+
+    The bar barely thickens along $'s own light→heavy line, so a blend alone
+    leaves it thinner than the bowls. Points on the bar's left/right edge (and
+    the counter edges that sit against it) share the two edge x-values, so we
+    shift those symmetrically about the bar centre."""
+    d = (target_w - (right_x - left_x)) / 2.0
+    out = []
+    for x, y in coords:
+        if abs(x - left_x) <= tol:
+            out.append((x - d, y))
+        elif abs(x - right_x) <= tol:
+            out.append((x + d, y))
+        else:
+            out.append((x, y))
+    return out
+
+
+def _calib_masters(name, light, heavy):
+    """Return (thin, light, heavy) calibrated masters for a drawn glyph."""
+    if name == "dollar":
+        light = _widen_dollar_bar(light, 274.8, 332.5, 84.0)
+        heavy = _widen_dollar_bar(heavy, 269.9, 338.3, 150.0)
+    ct, cl, ch = _CALIB[name]
+    return _blend(light, heavy, ct), _blend(light, heavy, cl), _blend(light, heavy, ch)
+
+
+def _draw_glyph_variable3(font, glyph_name, thin, light, heavy, end_pts, flags):
+    """Install a drawn glyph + gvar from three point-compatible wght masters
+    (thin@wght-min, light@default, heavy@wght-max) plus the slnt shear. MUST be
+    called AFTER the VF default is rebased to 375, so ``{}`` (the default) is the
+    light master and ``{wght:-1}`` / ``{wght:1}`` are wght 300 / 1000."""
+    locs = [
+        {}, {"wght": 1.0}, {"wght": -1.0},
+        {"slnt": -1.0}, {"wght": 1.0, "slnt": -1.0}, {"wght": -1.0, "slnt": -1.0},
+    ]
+    coords_by_loc = {
+        (): light,
+        (("wght", 1.0),): heavy,
+        (("wght", -1.0),): thin,
+        (("slnt", -1.0),): _shear(light, _SHEAR_15),
+        (("slnt", -1.0), ("wght", 1.0)): _shear(heavy, _SHEAR_15),
+        (("slnt", -1.0), ("wght", -1.0)): _shear(thin, _SHEAR_15),
+    }
+    _install_variable_glyph(font, glyph_name, locs, coords_by_loc, end_pts, flags)
+
+
+
 def draw_checkmark(font):
     """Variable build: draw ``✓`` (U+2713) as Moxy's fuller 6-point check.
 
@@ -582,10 +672,12 @@ _DOLLAR_FLAGS = [
 def draw_dollar(font):
     """Variable build: draw ``$`` (U+0024) as Moxy's reference dollar sign.
 
-    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
-    so Bold thickens. OFL-clean hardcoded geometry."""
-    _draw_glyph_variable(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_HEAVY,
-                         _DOLLAR_END_PTS, _DOLLAR_FLAGS)
+    Calibrated three-master (thin@300, light@375, heavy@1000) so it matches
+    Recursive's stroke weight; the central bar is widened to the bowls. MUST be
+    drawn after the VF default is rebased to 375. OFL-clean hardcoded geometry."""
+    thin, light, heavy = _calib_masters("dollar", _DOLLAR_LIGHT, _DOLLAR_HEAVY)
+    _draw_glyph_variable3(font, "dollar", thin, light, heavy,
+                          _DOLLAR_END_PTS, _DOLLAR_FLAGS)
 
 
 # @ (U+0040): the modern single-contour spiral at-sign — one continuous path
@@ -635,11 +727,14 @@ _AT_FLAGS = [
 def draw_at(font):
     """Variable build: draw ``@`` (U+0040) as Moxy's reference at-sign (spiral).
 
-    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
-    so Bold thickens. OFL-clean hardcoded geometry. The composite ``at.case``
-    references ``at`` as a component, so it inherits."""
-    _draw_glyph_variable(font, "at", _AT_LIGHT, _AT_HEAVY,
-                         _AT_END_PTS, _AT_FLAGS)
+    Calibrated three-master (thin@300, light@375, heavy@1000); the heavy caps at
+    the existing master because the spiral self-intersects past it, so ``@`` reads
+    a touch lighter at Bold. MUST be drawn after the VF default is rebased to 375.
+    OFL-clean hardcoded geometry. The composite ``at.case`` references ``at`` as a
+    component, so it inherits."""
+    thin, light, heavy = _calib_masters("at", _AT_LIGHT, _AT_HEAVY)
+    _draw_glyph_variable3(font, "at", thin, light, heavy,
+                          _AT_END_PTS, _AT_FLAGS)
 
 
 # & (U+0026): the intricate ampersand — a figure-eight "et" shape with two
@@ -700,10 +795,12 @@ _AMP_FLAGS = [
 def draw_ampersand(font):
     """Variable build: draw ``&`` (U+0026) as Moxy's reference ampersand.
 
-    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
-    so Bold thickens. OFL-clean hardcoded geometry."""
-    _draw_glyph_variable(font, "ampersand", _AMP_LIGHT, _AMP_HEAVY,
-                         _AMP_END_PTS, _AMP_FLAGS)
+    Calibrated three-master (thin@300, light@375, heavy@1000) so it matches
+    Recursive's stroke weight. MUST be drawn after the VF default is rebased to
+    375. OFL-clean hardcoded geometry."""
+    thin, light, heavy = _calib_masters("ampersand", _AMP_LIGHT, _AMP_HEAVY)
+    _draw_glyph_variable3(font, "ampersand", thin, light, heavy,
+                          _AMP_END_PTS, _AMP_FLAGS)
 
 
 # --------------------------------------------------------------------------------------
@@ -753,10 +850,12 @@ _TWO_FLAGS = [1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 
 def draw_two(font):
     """Variable build: draw ``2`` (U+0032) overriding Recursive's numeral.
 
-    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
-    so Bold thickens. OFL-clean hardcoded geometry."""
-    _draw_glyph_variable(font, "two", _TWO_LIGHT, _TWO_HEAVY,
-                         _TWO_END_PTS, _TWO_FLAGS)
+    Calibrated three-master (thin@300, light@375, heavy@1000) so it matches
+    Recursive's stroke weight. MUST be drawn after the VF default is rebased to
+    375. OFL-clean hardcoded geometry."""
+    thin, light, heavy = _calib_masters("two", _TWO_LIGHT, _TWO_HEAVY)
+    _draw_glyph_variable3(font, "two", thin, light, heavy,
+                          _TWO_END_PTS, _TWO_FLAGS)
 
 
 # 4 (U+0034): an open four — vertical stem, diagonal flag, horizontal crossbar.
@@ -782,10 +881,12 @@ _FOUR_FLAGS = [1] * 16
 def draw_four(font):
     """Variable build: draw ``4`` (U+0034) overriding Recursive's numeral.
 
-    Two-master (light = Regular, heavy = Heavy) — point-compatible across
-    weights, so Bold thickens. OFL-clean hardcoded geometry."""
-    _draw_glyph_variable(font, "four", _FOUR_LIGHT, _FOUR_HEAVY,
-                         _FOUR_END_PTS, _FOUR_FLAGS)
+    Calibrated three-master (thin@300, light@375, heavy@1000) so it matches
+    Recursive's stroke weight. MUST be drawn after the VF default is rebased to
+    375. OFL-clean hardcoded geometry."""
+    thin, light, heavy = _calib_masters("four", _FOUR_LIGHT, _FOUR_HEAVY)
+    _draw_glyph_variable3(font, "four", thin, light, heavy,
+                          _FOUR_END_PTS, _FOUR_FLAGS)
 
 
 # 5 (U+0035): a curved five — top horizontal bar, descending shoulder into a
@@ -825,10 +926,12 @@ _FIVE_FLAGS = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1,
 def draw_five(font):
     """Variable build: draw ``5`` (U+0035) overriding Recursive's numeral.
 
-    Two-master (light = Regular, heavy = hand-built from the reference Heavy)
-    so Bold thickens. OFL-clean hardcoded geometry."""
-    _draw_glyph_variable(font, "five", _FIVE_LIGHT, _FIVE_HEAVY,
-                         _FIVE_END_PTS, _FIVE_FLAGS)
+    Calibrated three-master (thin@300, light@375, heavy@1000) so it matches
+    Recursive's stroke weight. MUST be drawn after the VF default is rebased to
+    375. OFL-clean hardcoded geometry."""
+    thin, light, heavy = _calib_masters("five", _FIVE_LIGHT, _FIVE_HEAVY)
+    _draw_glyph_variable3(font, "five", thin, light, heavy,
+                          _FIVE_END_PTS, _FIVE_FLAGS)
 
 
 # 7 (U+0037): a seven — top horizontal bar, diagonal stroke down to the
@@ -850,10 +953,12 @@ _SEVEN_FLAGS = [1] * 8
 def draw_seven(font):
     """Variable build: draw ``7`` (U+0037) overriding Recursive's numeral.
 
-    Two-master (light = Regular, heavy = Heavy) — point-compatible across
-    weights, so Bold thickens. OFL-clean hardcoded geometry."""
-    _draw_glyph_variable(font, "seven", _SEVEN_LIGHT, _SEVEN_HEAVY,
-                         _SEVEN_END_PTS, _SEVEN_FLAGS)
+    Calibrated three-master (thin@300, light@375, heavy@1000) so it matches
+    Recursive's stroke weight. MUST be drawn after the VF default is rebased to
+    375. OFL-clean hardcoded geometry."""
+    thin, light, heavy = _calib_masters("seven", _SEVEN_LIGHT, _SEVEN_HEAVY)
+    _draw_glyph_variable3(font, "seven", thin, light, heavy,
+                          _SEVEN_END_PTS, _SEVEN_FLAGS)
 
 
 # --------------------------------------------------------------------------------------
@@ -871,6 +976,34 @@ def _draw_glyph_static(font, glyph_name, light, heavy, end_pts, flags, wght, sln
     if slnt:
         coords = _shear(coords, math.tan(math.radians(-slnt)))
     _write_outline(font, glyph_name, coords, end_pts, flags)
+
+
+# Static-build weight mapping for the seven calibrated glyphs @ $ & 2 4 5 7.
+# The static fonts ship Regular/Italic at wght 375 and Bold/Bold-Italic at
+# wght 600. wght 375 renders the light master (stem ≈ Recursive Regular); Bold
+# (600) renders a light→heavy blend tuned to Recursive's Bold stem. (The VF uses
+# its native avar for this; the static has no avar, so we map it explicitly.)
+_STATIC_BOLD_WGHT = 600.0
+_STATIC_BOLD_FRAC = 0.66
+
+
+def _static_calib_frac(wght):
+    """Light→heavy blend fraction for the calibrated static glyphs: 0 at the
+    Regular default (375), _STATIC_BOLD_FRAC at Bold. Clamped at 0 below 375
+    (no static Light weight is shipped)."""
+    return max(0.0, (wght - 375.0) / (_STATIC_BOLD_WGHT - 375.0) * _STATIC_BOLD_FRAC)
+
+
+def _draw_glyph_static_calib(font, name, design_light, design_heavy, end_pts, flags,
+                             wght, slnt=0.0):
+    """Static counterpart of ``_draw_glyph_variable3``: calibrate the masters to
+    Recursive's stroke weight, blend light→heavy for the instance's weight, and
+    shear for italic. For an already-instanced font (no gvar)."""
+    _thin, light, heavy = _calib_masters(name, design_light, design_heavy)
+    coords = _blend(light, heavy, _static_calib_frac(wght))
+    if slnt:
+        coords = _shear(coords, math.tan(math.radians(-slnt)))
+    _write_outline(font, name, coords, end_pts, flags)
 
 
 def draw_checkmark_static(font, wght, slnt=0.0):
@@ -909,44 +1042,44 @@ def draw_percent_static(font, wght, slnt=0.0):
 
 
 def draw_dollar_static(font, wght, slnt=0.0):
-    """Static build: draw ``$`` at the instance's weight/slant (two-master)."""
-    _draw_glyph_static(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_HEAVY,
-                       _DOLLAR_END_PTS, _DOLLAR_FLAGS, wght, slnt)
+    """Static build: draw ``$`` at the instance's weight/slant (calibrated)."""
+    _draw_glyph_static_calib(font, "dollar", _DOLLAR_LIGHT, _DOLLAR_HEAVY,
+                             _DOLLAR_END_PTS, _DOLLAR_FLAGS, wght, slnt)
 
 
 def draw_at_static(font, wght, slnt=0.0):
-    """Static build: draw ``@`` at the instance's weight/slant (two-master).
+    """Static build: draw ``@`` at the instance's weight/slant (calibrated).
 
     The composite ``at.case`` references ``at`` as a component, so it inherits."""
-    _draw_glyph_static(font, "at", _AT_LIGHT, _AT_HEAVY,
-                       _AT_END_PTS, _AT_FLAGS, wght, slnt)
+    _draw_glyph_static_calib(font, "at", _AT_LIGHT, _AT_HEAVY,
+                             _AT_END_PTS, _AT_FLAGS, wght, slnt)
 
 
 def draw_ampersand_static(font, wght, slnt=0.0):
-    """Static build: draw ``&`` at the instance's weight/slant (two-master)."""
-    _draw_glyph_static(font, "ampersand", _AMP_LIGHT, _AMP_HEAVY,
-                       _AMP_END_PTS, _AMP_FLAGS, wght, slnt)
+    """Static build: draw ``&`` at the instance's weight/slant (calibrated)."""
+    _draw_glyph_static_calib(font, "ampersand", _AMP_LIGHT, _AMP_HEAVY,
+                             _AMP_END_PTS, _AMP_FLAGS, wght, slnt)
 
 
 def draw_two_static(font, wght, slnt=0.0):
-    """Static build: draw ``2`` at the instance's weight/slant (two-master)."""
-    _draw_glyph_static(font, "two", _TWO_LIGHT, _TWO_HEAVY,
-                       _TWO_END_PTS, _TWO_FLAGS, wght, slnt)
+    """Static build: draw ``2`` at the instance's weight/slant (calibrated)."""
+    _draw_glyph_static_calib(font, "two", _TWO_LIGHT, _TWO_HEAVY,
+                             _TWO_END_PTS, _TWO_FLAGS, wght, slnt)
 
 
 def draw_four_static(font, wght, slnt=0.0):
-    """Static build: draw ``4`` at the instance's weight/slant (two-master)."""
-    _draw_glyph_static(font, "four", _FOUR_LIGHT, _FOUR_HEAVY,
-                       _FOUR_END_PTS, _FOUR_FLAGS, wght, slnt)
+    """Static build: draw ``4`` at the instance's weight/slant (calibrated)."""
+    _draw_glyph_static_calib(font, "four", _FOUR_LIGHT, _FOUR_HEAVY,
+                             _FOUR_END_PTS, _FOUR_FLAGS, wght, slnt)
 
 
 def draw_five_static(font, wght, slnt=0.0):
-    """Static build: draw ``5`` at the instance's weight/slant (two-master)."""
-    _draw_glyph_static(font, "five", _FIVE_LIGHT, _FIVE_HEAVY,
-                       _FIVE_END_PTS, _FIVE_FLAGS, wght, slnt)
+    """Static build: draw ``5`` at the instance's weight/slant (calibrated)."""
+    _draw_glyph_static_calib(font, "five", _FIVE_LIGHT, _FIVE_HEAVY,
+                             _FIVE_END_PTS, _FIVE_FLAGS, wght, slnt)
 
 
 def draw_seven_static(font, wght, slnt=0.0):
-    """Static build: draw ``7`` at the instance's weight/slant (two-master)."""
-    _draw_glyph_static(font, "seven", _SEVEN_LIGHT, _SEVEN_HEAVY,
-                       _SEVEN_END_PTS, _SEVEN_FLAGS, wght, slnt)
+    """Static build: draw ``7`` at the instance's weight/slant (calibrated)."""
+    _draw_glyph_static_calib(font, "seven", _SEVEN_LIGHT, _SEVEN_HEAVY,
+                             _SEVEN_END_PTS, _SEVEN_FLAGS, wght, slnt)

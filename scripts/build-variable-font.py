@@ -683,19 +683,15 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
     # geometry) — no external outline is read or shipped. All baked into Moxy
     # (not configurable).
     import glyph_tweaks
-    print("Applying glyph tweaks: percent, slash, backslash, checkmark, bullet, dollar, at, ampersand, two, four, five, seven")
+    print("Applying glyph tweaks: percent, slash, backslash, checkmark, bullet")
     glyph_tweaks.draw_percent(font)
     glyph_tweaks.draw_slash(font)
     glyph_tweaks.draw_backslash(font)
     glyph_tweaks.draw_checkmark(font)
     glyph_tweaks.draw_bullet(font)
-    glyph_tweaks.draw_dollar(font)
-    glyph_tweaks.draw_at(font)
-    glyph_tweaks.draw_ampersand(font)
-    glyph_tweaks.draw_two(font)
-    glyph_tweaks.draw_four(font)
-    glyph_tweaks.draw_five(font)
-    glyph_tweaks.draw_seven(font)
+    # NOTE: the seven weight-calibrated glyphs ($ @ & 2 4 5 7) are drawn LATER,
+    # after the default is rebased to 375, so their light master lands on the
+    # default (375). See "calibrated drawn glyphs" below.
 
     print(f"Renaming family -> '{FAMILY}'")
     rename_family(font, font_version(src_path))
@@ -778,6 +774,21 @@ def build(src_path: str, out_path: str, options: dict | None = None) -> None:
         pinned = " (MONO pinned=1, axis dropped)" if pure_mono else ""
         pretty = ", ".join(f"{tag}={value}" for tag, value in axis_defaults.items())
         print(f"Re-based default -> {pretty}{pinned}; axes now {kept}")
+
+    # ---- calibrated drawn glyphs ($ @ & 2 4 5 7) -----------------------------
+    # Drawn AFTER the default rebase so each glyph's "light" master lands on the
+    # new default (wght 375 = Recursive Regular) with a "thin" master at wght 300
+    # and a "heavy" at wght 1000. This makes their stroke weight track Recursive's
+    # own glyphs across the wght axis (they previously rendered a too-heavy blend
+    # at 375). All baked into Moxy (not configurable). See scripts/glyph_tweaks.py.
+    print("Applying calibrated glyph tweaks: dollar, at, ampersand, two, four, five, seven")
+    glyph_tweaks.draw_dollar(font)
+    glyph_tweaks.draw_at(font)
+    glyph_tweaks.draw_ampersand(font)
+    glyph_tweaks.draw_two(font)
+    glyph_tweaks.draw_four(font)
+    glyph_tweaks.draw_five(font)
+    glyph_tweaks.draw_seven(font)
 
     # ---- replace inherited Recursive named instances -------------------------
     # Recursive's fvar instances carry Recursive PostScript names. Replacing them
